@@ -36,4 +36,9 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Tenant::class);
     }
+
+    public function profesor()
+    {
+        return $this->hasOne(Profesor::class);
+    }
 }
