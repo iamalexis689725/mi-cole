@@ -11,4 +11,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/profesores', [ProfesorController::class, 'store'])
         ->middleware('role:director');
 
+    Route::post('/profesores/asignar-materia', [ProfesorController::class, 'asignarMateria'])
+        ->middleware('role:director');
 });

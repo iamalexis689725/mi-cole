@@ -6,14 +6,14 @@ use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Subject extends Model
+class ProfesorSubject extends Model
 {
     use HasFactory, BelongsToTenant;
 
-    protected $fillable = ['name'];
+    protected $table = 'profesor_subject';
 
-    public function profesores()
-    {
-        return $this->belongsToMany(Profesor::class, 'profesor_subject');
-    }
+    protected $fillable = [
+        'profesor_id',
+        'subject_id',
+    ];
 }
