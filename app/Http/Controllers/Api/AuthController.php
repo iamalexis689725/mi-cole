@@ -11,9 +11,6 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    /**
-     * Registro de usuario
-     */
     public function register(Request $request)
     {
         $validated = $request->validate([
@@ -23,17 +20,16 @@ class AuthController extends Controller
             'role' => 'required|exists:roles,name'
         ]);
 
-        // Crear usuario
+        
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
         ]);
 
-        // Asignar rol
+        
         $user->assignRole($validated['role']);
 
-        // Crear token
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -44,9 +40,6 @@ class AuthController extends Controller
         ], 201);
     }
 
-    /**
-     * Login de usuario
-     */
     public function login(Request $request)
     {
         $validated = $request->validate([
@@ -54,7 +47,7 @@ class AuthController extends Controller
             'password' => 'required'
         ]);
 
-        // Intento de autenticación
+        
         if (!Auth::attempt($validated)) {
             throw ValidationException::withMessages([
                 'email' => ['Credenciales incorrectas'],
@@ -63,10 +56,10 @@ class AuthController extends Controller
 
         $user = $request->user();
 
-        // Revocar tokens anteriores (opcional pero recomendado)
+        
         $user->tokens()->delete();
 
-        // Crear nuevo token
+        
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -77,12 +70,8 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Logout (cerrar sesión)
-     */
     public function logout(Request $request)
     {
-        // Elimina solo el token actual
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
@@ -90,9 +79,6 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Perfil del usuario autenticado
-     */
     public function me(Request $request)
     {
         $user = $request->user();

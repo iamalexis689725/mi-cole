@@ -56,7 +56,7 @@ class TenantController extends Controller
 
         $tenant = Tenant::findOrFail($id);
 
-        // 🚨 VALIDACIÓN MULTI-TENANT
+        
         if ($user->tenant_id !== $tenant->id) {
             return response()->json([
                 'success' => false,
@@ -69,12 +69,12 @@ class TenantController extends Controller
         ]);
 
         try {
-            // 🔥 eliminar logo anterior
+            //Eliminar logo anterior
             if ($tenant->logo && Storage::disk('public')->exists($tenant->logo)) {
                 Storage::disk('public')->delete($tenant->logo);
             }
 
-            // 🔥 nombre personalizado
+            //Nombre personalizado
             $extension = $request->file('logo')->getClientOriginalExtension();
             $filename = 'tenant_' . $tenant->id . '.' . $extension;
 

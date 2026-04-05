@@ -32,7 +32,7 @@ class ProfesorController extends Controller
             'especialidad' => 'nullable|string'
         ]);
 
-        // 🔥 Crear USER (con tenant)
+        
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -40,10 +40,10 @@ class ProfesorController extends Controller
             'tenant_id' => auth()->user()->tenant_id
         ]);
 
-        // 🔥 Asignar rol
+        
         $user->assignRole('profesor');
 
-        // 🔥 Crear PROFESOR (tenant automático por trait)
+        
         $profesor = Profesor::create([
             'user_id' => $user->id,
             'codigo_profesor' => $request->codigo_profesor,
@@ -71,7 +71,7 @@ class ProfesorController extends Controller
             ],
         ]);
 
-        // 🔥 VALIDACIÓN EXTRA (ANTI BUG)
+        
         $profesor = Profesor::findOrFail($request->profesor_id);
         $subject = Subject::findOrFail($request->subject_id);
 
@@ -82,7 +82,7 @@ class ProfesorController extends Controller
             ], 403);
         }
 
-        // 🔥 EVITAR DUPLICADOS
+        
         $existe = ProfesorSubject::where('profesor_id', $request->profesor_id)
             ->where('subject_id', $request->subject_id)
             ->exists();
@@ -94,7 +94,7 @@ class ProfesorController extends Controller
             ], 409);
         }
 
-        // 🔥 CREAR RELACIÓN
+        
         $relacion = ProfesorSubject::create([
             'profesor_id' => $request->profesor_id,
             'subject_id' => $request->subject_id,

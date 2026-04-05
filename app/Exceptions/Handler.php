@@ -19,7 +19,6 @@ class Handler extends ExceptionHandler
 
     public function register(): void
     {
-        // 🔐 Error de roles (Spatie)
         $this->renderable(function (UnauthorizedException $e, Request $request) {
             if ($request->is('api/*')) {
                 return response()->json([
@@ -30,7 +29,7 @@ class Handler extends ExceptionHandler
             }
         });
 
-        // ⚠️ Error de validación
+        
         $this->renderable(function (ValidationException $e, Request $request) {
             if ($request->is('api/*')) {
                 return response()->json([
@@ -41,7 +40,7 @@ class Handler extends ExceptionHandler
             }
         });
 
-        // 🌐 Errores HTTP (403, 404, 500, etc.)
+        
         $this->renderable(function (HttpExceptionInterface $e, Request $request) {
             if ($request->is('api/*')) {
                 return response()->json([
@@ -52,12 +51,12 @@ class Handler extends ExceptionHandler
             }
         });
 
-        // 💥 Error general (fallback)
+        
         $this->renderable(function (Throwable $e, Request $request) {
             if ($request->is('api/*')) {
                 return response()->json([
                     'success' => false,
-                    'message' => $e->getMessage(), // 🔥 MOSTRAR ERROR REAL
+                    'message' => $e->getMessage(),
                     'line' => $e->getLine(),
                     'file' => $e->getFile()
                 ], 500);
