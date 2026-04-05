@@ -50,9 +50,19 @@ class TenantController extends Controller
         }
     }
 
-     public function uploadLogo(Request $request, $id)
+    public function uploadLogo(Request $request, $id)
     {
+        $user = auth()->user();
+
         $tenant = Tenant::findOrFail($id);
+
+        // 🚨 VALIDACIÓN MULTI-TENANT
+        if ($user->tenant_id !== $tenant->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permiso para modificar este tenant'
+            ], 403);
+        }
 
         $request->validate([
             'logo' => 'required|image|mimes:png,jpg,jpeg|max:2048'
@@ -64,14 +74,12 @@ class TenantController extends Controller
                 Storage::disk('public')->delete($tenant->logo);
             }
 
-            // 🔥 nombre personalizado (PRO)
+            // 🔥 nombre personalizado
             $extension = $request->file('logo')->getClientOriginalExtension();
             $filename = 'tenant_' . $tenant->id . '.' . $extension;
 
-            // 🔥 guardar archivo
             $path = $request->file('logo')->storeAs('tenants', $filename, 'public');
 
-            // 🔥 actualizar BD
             $tenant->update([
                 'logo' => $path
             ]);
@@ -84,7 +92,6 @@ class TenantController extends Controller
                     'url' => asset('storage/' . $path)
                 ]
             ]);
-
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
