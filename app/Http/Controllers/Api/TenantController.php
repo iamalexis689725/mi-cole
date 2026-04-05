@@ -7,6 +7,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class TenantController extends Controller
 {
@@ -46,6 +47,50 @@ class TenantController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+     public function uploadLogo(Request $request, $id)
+    {
+        $tenant = Tenant::findOrFail($id);
+
+        $request->validate([
+            'logo' => 'required|image|mimes:png,jpg,jpeg|max:2048'
+        ]);
+
+        try {
+            // 🔥 eliminar logo anterior
+            if ($tenant->logo && Storage::disk('public')->exists($tenant->logo)) {
+                Storage::disk('public')->delete($tenant->logo);
+            }
+
+            // 🔥 nombre personalizado (PRO)
+            $extension = $request->file('logo')->getClientOriginalExtension();
+            $filename = 'tenant_' . $tenant->id . '.' . $extension;
+
+            // 🔥 guardar archivo
+            $path = $request->file('logo')->storeAs('tenants', $filename, 'public');
+
+            // 🔥 actualizar BD
+            $tenant->update([
+                'logo' => $path
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Logo actualizado correctamente',
+                'data' => [
+                    'logo' => $path,
+                    'url' => asset('storage/' . $path)
+                ]
+            ]);
+
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al subir logo',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }
