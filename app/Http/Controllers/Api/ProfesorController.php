@@ -13,17 +13,15 @@ use Illuminate\Validation\Rule;
 
 class ProfesorController extends Controller
 {
+    // 🔹 LISTAR (CORREGIDO)
     public function index()
     {
-        return Profesor::with('user')->get();
+        return Profesor::with(['user', 'subjects'])->get();
     }
 
+    // 🔹 CREAR
     public function store(Request $request)
     {
-        if (!auth()->user()->hasRole('director')) {
-            return response()->json(['message' => 'No autorizado'], 403);
-        }
-
         $request->validate([
             'name' => 'required|string',
             'email' => 'required|email|unique:users',
@@ -32,7 +30,6 @@ class ProfesorController extends Controller
             'especialidad' => 'nullable|string'
         ]);
 
-        
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -40,14 +37,13 @@ class ProfesorController extends Controller
             'tenant_id' => auth()->user()->tenant_id
         ]);
 
-        
         $user->assignRole('profesor');
 
-        
         $profesor = Profesor::create([
             'user_id' => $user->id,
             'codigo_profesor' => $request->codigo_profesor,
-            'especialidad' => $request->especialidad
+            'especialidad' => $request->especialidad,
+            'tenant_id' => auth()->user()->tenant_id
         ]);
 
         return response()->json([
@@ -56,6 +52,72 @@ class ProfesorController extends Controller
         ], 201);
     }
 
+    // 🔹 VER UNO
+    public function show($id)
+    {
+        return Profesor::with([
+            'user',
+            'subjects' => function ($query) {
+                $query->where('subjects.tenant_id', auth()->user()->tenant_id);
+            }
+        ])->findOrFail($id);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $profesor = Profesor::with('user')->findOrFail($id);
+
+        $request->validate([
+            'name' => 'sometimes|string',
+            'email' => 'sometimes|email|unique:users,email,' . $profesor->user->id,
+            'password' => 'nullable|min:6',
+
+            'codigo_profesor' => 'sometimes|string|unique:profesores,codigo_profesor,' . $id,
+            'especialidad' => 'nullable|string'
+        ]);
+
+        // 🔹 actualizar usuario
+        $userData = $request->only(['name', 'email']);
+
+        if ($request->filled('password')) {
+            $userData['password'] = bcrypt($request->password);
+        }
+
+        if (!empty($userData)) {
+            $profesor->user->update($userData);
+        }
+
+        // 🔹 actualizar profesor
+        $profesorData = $request->only([
+            'codigo_profesor',
+            'especialidad'
+        ]);
+
+        if (!empty($profesorData)) {
+            $profesor->update($profesorData);
+        }
+
+        return response()->json(
+            $profesor->load('user')
+        );
+    }
+
+    // 🔹 ELIMINAR
+    public function destroy($id)
+    {
+        $profesor = Profesor::findOrFail($id);
+
+        ProfesorSubject::where('profesor_id', $id)->delete();
+
+        $profesor->user()->delete();
+        $profesor->delete();
+
+        return response()->json([
+            'message' => 'Profesor eliminado correctamente'
+        ]);
+    }
+
+    // 🔹 ASIGNAR MATERIA (CORREGIDO)
     public function asignarMateria(Request $request)
     {
         $request->validate([
@@ -71,37 +133,33 @@ class ProfesorController extends Controller
             ],
         ]);
 
-        
         $profesor = Profesor::findOrFail($request->profesor_id);
         $subject = Subject::findOrFail($request->subject_id);
 
         if ($profesor->tenant_id !== $subject->tenant_id) {
             return response()->json([
-                'success' => false,
                 'message' => 'No puedes relacionar datos de diferentes tenants'
             ], 403);
         }
 
-        
         $existe = ProfesorSubject::where('profesor_id', $request->profesor_id)
             ->where('subject_id', $request->subject_id)
+            ->where('tenant_id', auth()->user()->tenant_id)
             ->exists();
 
         if ($existe) {
             return response()->json([
-                'success' => false,
                 'message' => 'Esta materia ya fue asignada a este profesor'
             ], 409);
         }
 
-        
         $relacion = ProfesorSubject::create([
             'profesor_id' => $request->profesor_id,
             'subject_id' => $request->subject_id,
+            'tenant_id' => auth()->user()->tenant_id
         ]);
 
         return response()->json([
-            'success' => true,
             'message' => 'Materia asignada correctamente',
             'data' => $relacion
         ], 201);

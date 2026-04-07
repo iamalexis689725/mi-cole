@@ -11,6 +11,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/profesores', [ProfesorController::class, 'store'])
         ->middleware('role:director');
 
+    Route::get('/profesores/{id}', [ProfesorController::class, 'show'])
+        ->middleware('role:director');
+
+    Route::put('/profesores/{id}', [ProfesorController::class, 'update'])
+        ->middleware('role:director');
+
+    Route::delete('/profesores/{id}', [ProfesorController::class, 'destroy'])
+        ->middleware('role:director');
+
     Route::post('/profesores/asignar-materia', [ProfesorController::class, 'asignarMateria'])
         ->middleware('role:director');
 });

@@ -25,6 +25,9 @@ class Profesor extends Model
 
     public function subjects()
     {
-        return $this->belongsToMany(Subject::class, 'profesor_subject');
+        return $this->belongsToMany(Subject::class, 'profesor_subject')
+        ->withPivot('tenant_id')
+        ->wherePivot('tenant_id', auth()->user()->tenant_id)
+        ->where('subjects.tenant_id', auth()->user()->tenant_id);
     }
 }

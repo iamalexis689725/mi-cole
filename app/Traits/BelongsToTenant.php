@@ -8,17 +8,22 @@ trait BelongsToTenant
 {
     protected static function booted()
     {
-        // Auto asignar tenant al crear
+        // Auto asignar tenant
         static::creating(function ($model) {
             if (auth()->check()) {
                 $model->tenant_id = auth()->user()->tenant_id;
             }
         });
 
-        // Filtro global por tenant
+        // Scope global
         static::addGlobalScope('tenant', function (Builder $builder) {
             if (auth()->check()) {
-                $builder->where('tenant_id', auth()->user()->tenant_id);
+                $model = $builder->getModel();
+
+                $builder->where(
+                    $model->getTable() . '.tenant_id',
+                    auth()->user()->tenant_id
+                );
             }
         });
     }

@@ -9,19 +9,23 @@ return new class extends Migration
     
     public function up()
     {
-        Schema::create('profesor_subject', function (Blueprint $table) {
+        Schema::create('cursos', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('profesor_id')->constrained('profesores')->onDelete('cascade');
-            $table->foreignId('subject_id')->constrained()->onDelete('cascade');
-
             $table->foreignId('tenant_id')->constrained()->onDelete('cascade');
+            
+            $table->string('nombre');
+            $table->string('nivel');
+            $table->text('descripcion')->nullable();
+            $table->boolean('estado')->default(true);
 
             $table->timestamps();
+
+            $table->unique(['tenant_id', 'nombre']);
         });
     }
 
     public function down()
     {
-        Schema::dropIfExists('profesor_subject');
+        Schema::dropIfExists('cursos');
     }
 };
