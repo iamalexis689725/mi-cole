@@ -11,8 +11,10 @@ use Illuminate\Support\Facades\Storage;
 
 class TenantController extends Controller
 {
+    
     public function store(Request $request)
     {
+        
         $request->validate([
             'name' => 'required',
             'slug' => 'required|unique:tenants',
@@ -42,6 +44,7 @@ class TenantController extends Controller
 
             return response()->json([
                 'tenant' => $tenant,
+                'logo_url' => null,
                 'director' => $director
             ]);
         } catch (\Exception $e) {
@@ -50,6 +53,70 @@ class TenantController extends Controller
         }
     }
 
+    
+    public function index()
+    {
+        
+        $tenants = Tenant::all();
+
+        $tenants->map(function ($tenant) {
+            $tenant->logo_url = $tenant->logo
+                ? asset('storage/' . $tenant->logo)
+                : null;
+            return $tenant;
+        });
+
+        return response()->json($tenants);
+    }
+
+    
+    public function show($id)
+    {
+        
+
+        $tenant = Tenant::findOrFail($id);
+
+        return response()->json([
+            'data' => $tenant,
+            'logo_url' => $tenant->logo
+                ? asset('storage/' . $tenant->logo)
+                : null
+        ]);
+    }
+
+    
+    public function destroy($id)
+    {
+        
+
+        $tenant = Tenant::findOrFail($id);
+
+        if ($tenant->logo && Storage::disk('public')->exists($tenant->logo)) {
+            Storage::disk('public')->delete($tenant->logo);
+        }
+
+        $tenant->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tenant eliminado correctamente'
+        ]);
+    }
+
+    
+    public function myTenant()
+    {
+        $tenant = auth()->user()->tenant;
+
+        return response()->json([
+            'data' => $tenant,
+            'logo_url' => $tenant->logo
+                ? asset('storage/' . $tenant->logo)
+                : null
+        ]);
+    }
+
+    
     public function uploadLogo(Request $request)
     {
         $tenant = auth()->user()->tenant;
@@ -58,40 +125,27 @@ class TenantController extends Controller
             'logo' => 'required|image|mimes:png,jpg,jpeg|max:2048'
         ]);
 
-        try {
-            // 🔥 eliminar logo anterior
-            if ($tenant->logo && Storage::disk('public')->exists($tenant->logo)) {
-                Storage::disk('public')->delete($tenant->logo);
-            }
-
-            // 🔥 nombre personalizado
-            $extension = $request->file('logo')->getClientOriginalExtension();
-            $filename = 'tenant_' . $tenant->id . '.' . $extension;
-
-            $path = $request->file('logo')->storeAs('tenants', $filename, 'public');
-
-            $tenant->update([
-                'logo' => $path
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Logo actualizado correctamente',
-                'data' => [
-                    'logo' => $path,
-                    'url' => asset('storage/' . $path)
-                ]
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al subir logo',
-                'error' => $e->getMessage()
-            ], 500);
+        if ($tenant->logo && Storage::disk('public')->exists($tenant->logo)) {
+            Storage::disk('public')->delete($tenant->logo);
         }
+
+        $extension = $request->file('logo')->getClientOriginalExtension();
+        $filename = 'tenant_' . $tenant->id . '.' . $extension;
+
+        $path = $request->file('logo')->storeAs('tenants', $filename, 'public');
+
+        $tenant->update([
+            'logo' => $path
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => $tenant,
+            'logo_url' => asset('storage/' . $path)
+        ]);
     }
 
-
+    
     public function update(Request $request)
     {
         $tenant = auth()->user()->tenant;
@@ -108,8 +162,10 @@ class TenantController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Tenant actualizado correctamente',
-            'data' => $tenant
+            'data' => $tenant,
+            'logo_url' => $tenant->logo
+                ? asset('storage/' . $tenant->logo)
+                : null
         ]);
     }
 }
