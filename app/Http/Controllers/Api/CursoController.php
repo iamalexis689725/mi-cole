@@ -66,4 +66,13 @@ class CursoController extends Controller
 
         return response()->json(['message' => 'Curso eliminado correctamente']);
     }
+
+    public function paralelos($id)
+    {
+        $curso = Curso::with('paralelos')->findOrFail($id);
+
+        return response()->json([
+            'data' => $curso->paralelos
+        ]);
+    }
 }

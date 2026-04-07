@@ -6,16 +6,32 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    
     public function up()
     {
         Schema::create('asignaciones_docente', function (Blueprint $table) {
             $table->id();
+
+            $table->foreignId('subject_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('profesor_id')->constrained('profesores')->cascadeOnDelete();
+            $table->foreignId('curso_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('paralelo_id')->constrained()->cascadeOnDelete();
+
+            $table->string('dia');
+            $table->time('hora_inicio');
+            $table->time('hora_fin');
+
+            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
+
             $table->timestamps();
+
+            // Índice único con nombre corto para evitar error MySQL
+            $table->unique(
+                ['profesor_id', 'dia', 'hora_inicio', 'hora_fin', 'tenant_id'],
+                'uniq_prof_dia_hora_tenant'
+            );
         });
     }
 
-    
     public function down()
     {
         Schema::dropIfExists('asignaciones_docente');

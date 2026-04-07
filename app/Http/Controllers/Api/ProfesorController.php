@@ -13,13 +13,13 @@ use Illuminate\Validation\Rule;
 
 class ProfesorController extends Controller
 {
-    // 🔹 LISTAR (CORREGIDO)
+
     public function index()
     {
         return Profesor::with(['user', 'subjects'])->get();
     }
 
-    // 🔹 CREAR
+   
     public function store(Request $request)
     {
         $request->validate([
@@ -52,7 +52,7 @@ class ProfesorController extends Controller
         ], 201);
     }
 
-    // 🔹 VER UNO
+   
     public function show($id)
     {
         return Profesor::with([
@@ -76,7 +76,7 @@ class ProfesorController extends Controller
             'especialidad' => 'nullable|string'
         ]);
 
-        // 🔹 actualizar usuario
+        // actualizo usuario
         $userData = $request->only(['name', 'email']);
 
         if ($request->filled('password')) {
@@ -87,7 +87,7 @@ class ProfesorController extends Controller
             $profesor->user->update($userData);
         }
 
-        // 🔹 actualizar profesor
+        //actualizo profesor
         $profesorData = $request->only([
             'codigo_profesor',
             'especialidad'
@@ -102,7 +102,7 @@ class ProfesorController extends Controller
         );
     }
 
-    // 🔹 ELIMINAR
+    
     public function destroy($id)
     {
         $profesor = Profesor::findOrFail($id);
@@ -117,7 +117,7 @@ class ProfesorController extends Controller
         ]);
     }
 
-    // 🔹 ASIGNAR MATERIA (CORREGIDO)
+    
     public function asignarMateria(Request $request)
     {
         $request->validate([
@@ -163,5 +163,15 @@ class ProfesorController extends Controller
             'message' => 'Materia asignada correctamente',
             'data' => $relacion
         ], 201);
+    }
+
+
+    public function subjects($id)
+    {
+        $profesor = Profesor::with('subjects')->findOrFail($id);
+
+        return response()->json([
+            'data' => $profesor->subjects
+        ]);
     }
 }

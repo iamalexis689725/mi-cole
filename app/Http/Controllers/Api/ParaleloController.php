@@ -25,7 +25,7 @@ class ParaleloController extends Controller
             'nombre.unique' => 'Este paralelo ya existe en este curso'
         ]);
 
-        // validar tenant
+        // valido mi tenant
         $curso = Curso::where('id', $request->curso_id)
             ->where('tenant_id', auth()->user()->tenant_id)
             ->first();
@@ -65,7 +65,7 @@ class ParaleloController extends Controller
             'nombre.unique' => 'Este paralelo ya existe en este curso'
         ]);
 
-        // validar tenant
+        // valido tenant
         $curso = Curso::where('id', $request->curso_id)
             ->where('tenant_id', auth()->user()->tenant_id)
             ->first();

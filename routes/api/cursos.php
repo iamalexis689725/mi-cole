@@ -15,4 +15,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         ->middleware('role:director');
     Route::delete('/cursos/{id}', [CursoController::class, 'destroy'])
         ->middleware('role:director');
+
+    Route::get('/cursos/{id}/paralelos', [CursoController::class, 'paralelos'])
+        ->middleware('role:director');
 });

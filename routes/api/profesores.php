@@ -22,4 +22,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::post('/profesores/asignar-materia', [ProfesorController::class, 'asignarMateria'])
         ->middleware('role:director');
+
+    Route::get('/profesores/{id}/subjects', [ProfesorController::class, 'subjects'])
+        ->middleware('role:director');
 });

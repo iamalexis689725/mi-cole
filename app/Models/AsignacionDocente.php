@@ -1,0 +1,44 @@
+<?php
+
+namespace App\Models;
+
+use App\Traits\BelongsToTenant;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class AsignacionDocente extends Model
+{
+    use HasFactory, BelongsToTenant;
+
+    protected $table = 'asignaciones_docente';
+
+    protected $fillable = [
+        'profesor_id',
+        'subject_id',
+        'curso_id',
+        'paralelo_id',
+        'dia',
+        'hora_inicio',
+        'hora_fin',
+    ];
+
+    public function profesor()
+    {
+        return $this->belongsTo(Profesor::class);
+    }
+
+    public function subject()
+    {
+        return $this->belongsTo(Subject::class);
+    }
+
+    public function curso()
+    {
+        return $this->belongsTo(Curso::class);
+    }
+
+    public function paralelo()
+    {
+        return $this->belongsTo(Paralelo::class);
+    }
+}
