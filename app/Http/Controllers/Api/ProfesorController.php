@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AsignacionDocente;
 use App\Models\User;
 use App\Models\Profesor;
 use App\Models\ProfesorSubject;
@@ -19,7 +20,7 @@ class ProfesorController extends Controller
         return Profesor::with(['user', 'subjects'])->get();
     }
 
-   
+
     public function store(Request $request)
     {
         $request->validate([
@@ -52,7 +53,7 @@ class ProfesorController extends Controller
         ], 201);
     }
 
-   
+
     public function show($id)
     {
         return Profesor::with([
@@ -102,7 +103,7 @@ class ProfesorController extends Controller
         );
     }
 
-    
+
     public function destroy($id)
     {
         $profesor = Profesor::findOrFail($id);
@@ -117,7 +118,7 @@ class ProfesorController extends Controller
         ]);
     }
 
-    
+
     public function asignarMateria(Request $request)
     {
         $request->validate([
@@ -172,6 +173,41 @@ class ProfesorController extends Controller
 
         return response()->json([
             'data' => $profesor->subjects
+        ]);
+    }
+
+    public function horario($id)
+    {
+        $profesor = Profesor::with('user')->findOrFail($id);
+
+        $asignaciones = AsignacionDocente::with(['subject', 'curso', 'paralelo'])
+            ->where('profesor_id', $id)
+            ->orderBy('hora_inicio')
+            ->get()
+            ->map(fn($a) => [
+                'id'          => $a->id,
+                'dia'         => $a->dia,
+                'hora_inicio' => $a->hora_inicio,
+                'hora_fin'    => $a->hora_fin,
+                'materia'     => $a->subject->name,
+                'curso'       => $a->curso->nombre,
+                'paralelo'    => $a->paralelo->nombre,
+            ])
+            ->groupBy('dia');
+
+        $orden = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
+
+        $horario = collect($orden)
+            ->filter(fn($dia) => $asignaciones->has($dia))
+            ->mapWithKeys(fn($dia) => [$dia => $asignaciones[$dia]]);
+
+        return response()->json([
+            'profesor' => [
+                'id'     => $profesor->id,
+                'nombre' => $profesor->user->name,
+                'codigo' => $profesor->codigo_profesor,
+            ],
+            'horario' => $horario
         ]);
     }
 }
