@@ -81,7 +81,7 @@ class ProfesorController extends Controller
         $userData = $request->only(['name', 'email']);
 
         if ($request->filled('password')) {
-            $userData['password'] = bcrypt($request->password);
+            $userData['password'] = Hash::make($request->password);
         }
 
         if (!empty($userData)) {

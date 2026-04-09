@@ -3,9 +3,97 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Estudiante;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class EstudianteController extends Controller
 {
-    //
+    public function index()
+    {
+        return Estudiante::with('user')->get();
+    }
+
+    public function show($id)
+    {
+        return Estudiante::with('user')->findOrFail($id);
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|min:6',
+            'codigo_estudiante' => 'required|string|unique:estudiantes',
+        ]);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'tenant_id' => auth()->user()->tenant_id,
+        ]);
+
+        $user->assignRole('estudiante');
+
+        $estudiante = Estudiante::create([
+            'user_id'           => $user->id,
+            'codigo_estudiante' => $request->codigo_estudiante,
+            'tenant_id'         => auth()->user()->tenant_id,
+        ]);
+
+        return response()->json([
+            'message' => 'Estudiante creado correctamente',
+            'data'    => $estudiante->load('user')
+        ], 201);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $estudiante = Estudiante::with('user')->findOrFail($id);
+
+        $request->validate([
+            'name' => 'sometimes|string',
+            'email' => 'sometimes|email|unique:users,email,' . $estudiante->user->id,
+            'password' => 'nullable|min:6',
+            'codigo_estudiante' => 'sometimes|string|unique:estudiantes,codigo_estudiante,' . $id,
+        ]);
+
+        $userData = $request->only(['name', 'email']);
+
+        if ($request->filled('password')) {
+            $userData['password'] = Hash::make($request->password);
+        }
+
+        if (!empty($userData)) {
+            $estudiante->user->update($userData);
+        }
+
+        $estudianteData = $request->only(['codigo_estudiante']);
+
+        if (!empty($estudianteData)) {
+            $estudiante->update($estudianteData);
+        }
+
+        return response()->json([
+            'message' => 'Estudiante actualizado correctamente',
+            'data'    => $estudiante->load('user')
+        ]);
+    }
+
+    public function destroy($id)
+    {
+        $estudiante = Estudiante::with('user')->findOrFail($id);
+
+        $estudiante->user->syncRoles([]);
+
+        $estudiante->user->delete();
+        $estudiante->delete();
+
+        return response()->json([
+            'message' => 'Estudiante eliminado correctamente'
+        ]);
+    }
 }
