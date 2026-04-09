@@ -11,10 +11,15 @@ use Illuminate\Support\Facades\Storage;
 
 class TenantController extends Controller
 {
-    
+    private function buildLogoUrl($path)
+    {
+        if (!$path) return null;
+
+        return request()->getSchemeAndHttpHost() . '/storage/' . $path;
+    }
+
     public function store(Request $request)
     {
-        
         $request->validate([
             'name' => 'required',
             'slug' => 'required|unique:tenants',
@@ -49,46 +54,36 @@ class TenantController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json([
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
-    
     public function index()
     {
-        
         $tenants = Tenant::all();
 
         $tenants->map(function ($tenant) {
-            $tenant->logo_url = $tenant->logo
-                ? asset('storage/' . $tenant->logo)
-                : null;
+            $tenant->logo_url = $this->buildLogoUrl($tenant->logo);
             return $tenant;
         });
 
         return response()->json($tenants);
     }
 
-    
     public function show($id)
     {
-        
-
         $tenant = Tenant::findOrFail($id);
 
         return response()->json([
             'data' => $tenant,
-            'logo_url' => $tenant->logo
-                ? asset('storage/' . $tenant->logo)
-                : null
+            'logo_url' => $this->buildLogoUrl($tenant->logo)
         ]);
     }
 
-    
     public function destroy($id)
     {
-        
-
         $tenant = Tenant::findOrFail($id);
 
         if ($tenant->logo && Storage::disk('public')->exists($tenant->logo)) {
@@ -103,20 +98,16 @@ class TenantController extends Controller
         ]);
     }
 
-    
     public function myTenant()
     {
         $tenant = auth()->user()->tenant;
 
         return response()->json([
             'data' => $tenant,
-            'logo_url' => $tenant->logo
-                ? asset('storage/' . $tenant->logo)
-                : null
+            'logo_url' => $this->buildLogoUrl($tenant->logo)
         ]);
     }
 
-    
     public function uploadLogo(Request $request)
     {
         $tenant = auth()->user()->tenant;
@@ -125,6 +116,7 @@ class TenantController extends Controller
             'logo' => 'required|image|mimes:png,jpg,jpeg|max:2048'
         ]);
 
+        // eliminar anterior
         if ($tenant->logo && Storage::disk('public')->exists($tenant->logo)) {
             Storage::disk('public')->delete($tenant->logo);
         }
@@ -141,11 +133,10 @@ class TenantController extends Controller
         return response()->json([
             'success' => true,
             'data' => $tenant,
-            'logo_url' => asset('storage/' . $path)
+            'logo_url' => $this->buildLogoUrl($path)
         ]);
     }
 
-    
     public function update(Request $request)
     {
         $tenant = auth()->user()->tenant;
@@ -163,9 +154,7 @@ class TenantController extends Controller
         return response()->json([
             'success' => true,
             'data' => $tenant,
-            'logo_url' => $tenant->logo
-                ? asset('storage/' . $tenant->logo)
-                : null
+            'logo_url' => $this->buildLogoUrl($tenant->logo)
         ]);
     }
 }
