@@ -6,15 +6,16 @@ use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Estudiante extends Model
+class PadreFamilia extends Model
 {
     use HasFactory, BelongsToTenant;
 
-    protected $table = 'estudiantes';
+    protected $table = 'padre_familias';
 
     protected $fillable = [
         'user_id',
-        'codigo_estudiante',  
+        'telefono',
+        'ocupacion',
     ];
 
     public function user()
@@ -22,9 +23,9 @@ class Estudiante extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function padres()
+    public function estudiantes()
     {
-        return $this->belongsToMany(PadreFamilia::class, 'padre_estudiante')
+        return $this->belongsToMany(Estudiante::class, 'padre_estudiante')
             ->withPivot('tenant_id', 'parentesco')
             ->wherePivot('tenant_id', auth()->user()->tenant_id);
     }
