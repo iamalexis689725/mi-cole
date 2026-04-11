@@ -21,4 +21,9 @@ class Curso extends Model
     {
         return $this->hasMany(Paralelo::class);
     }
+
+    public function periodo()
+    {
+        return $this->belongsTo(AcademicPeriod::class, 'academic_period_id');
+    }
 }

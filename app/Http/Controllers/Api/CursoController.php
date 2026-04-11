@@ -8,14 +8,13 @@ use Illuminate\Http\Request;
 
 class CursoController extends Controller
 {
-    public function index()
+    public function index($periodoId)
     {
-        return Curso::all();
+        return Curso::where('academic_period_id', $periodoId)->get();
     }
 
-    public function store(Request $request)
+    public function store(Request $request, $periodoId)
     {
-        
         $request->validate([
             'nombre' => 'required|string',
             'nivel' => 'required|string',
@@ -26,50 +25,48 @@ class CursoController extends Controller
             'nombre' => $request->nombre,
             'nivel' => $request->nivel,
             'descripcion' => $request->descripcion,
-            'tenant_id' => auth()->user()->tenant_id,
+            'academic_period_id' => $periodoId,
         ]);
 
         return response()->json($curso, 201);
     }
 
-    public function show($id)
+    public function show($periodoId, $id)
     {
-        return Curso::with('paralelos')->findOrFail($id);
+        return Curso::where('academic_period_id', $periodoId)
+            ->with('paralelos')
+            ->findOrFail($id);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, $periodoId, $id)
     {
-        $curso = Curso::findOrFail($id);
+        $curso = Curso::where('academic_period_id', $periodoId)
+            ->findOrFail($id);
 
-        $request->validate([
-            'nombre' => 'required|string',
-            'nivel' => 'required|string',
-            'descripcion' => 'nullable|string',
-            'estado' => 'nullable|boolean',
-        ]);
-
-        $data = $request->only([
+        $curso->update($request->only([
             'nombre',
             'nivel',
             'descripcion',
             'estado'
-        ]);
-
-        $curso->update($data);
+        ]));
 
         return response()->json($curso);
     }
 
-    public function destroy($id)
+    public function destroy($periodoId, $id)
     {
-        Curso::findOrFail($id)->delete();
+        Curso::where('academic_period_id', $periodoId)
+            ->findOrFail($id)
+            ->delete();
 
-        return response()->json(['message' => 'Curso eliminado correctamente']);
+        return response()->json(['message' => 'Curso eliminado']);
     }
 
-    public function paralelos($id)
+    public function paralelos($periodoId, $id)
     {
-        $curso = Curso::with('paralelos')->findOrFail($id);
+        $curso = Curso::where('academic_period_id', $periodoId)
+            ->with('paralelos')
+            ->findOrFail($id);
 
         return response()->json([
             'data' => $curso->paralelos
