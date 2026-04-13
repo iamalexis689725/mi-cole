@@ -22,4 +22,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::delete('/periodos/{id}', [AcademicPeriodController::class, 'destroy'])
         ->middleware('role:director');
+
+    Route::patch('/periodos/{id}/activar', [AcademicPeriodController::class, 'activar'])
+        ->middleware('role:director');
 });

@@ -8,9 +8,12 @@ use Illuminate\Http\Request;
 
 class CursoController extends Controller
 {
+    
     public function index($periodoId)
     {
-        return Curso::where('academic_period_id', $periodoId)->get();
+        return Curso::with('periodo', 'paralelos')
+            ->where('academic_period_id', $periodoId)
+            ->get();
     }
 
     public function store(Request $request, $periodoId)
@@ -27,6 +30,8 @@ class CursoController extends Controller
             'descripcion' => $request->descripcion,
             'academic_period_id' => $periodoId,
         ]);
+
+        $curso->load('periodo');
 
         return response()->json($curso, 201);
     }

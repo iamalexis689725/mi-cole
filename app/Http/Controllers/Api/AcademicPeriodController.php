@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 
 class AcademicPeriodController extends Controller
 {
+
     public function index()
     {
         return AcademicPeriod::all();
@@ -22,7 +23,9 @@ class AcademicPeriodController extends Controller
             'activo' => 'nullable|boolean',
         ]);
 
-        if ($request->activo) {
+        $isActivo = $request->activo ?? false;
+
+        if ($isActivo) {
             AcademicPeriod::where('tenant_id', auth()->user()->tenant_id)
                 ->update(['activo' => false]);
         }
@@ -31,22 +34,35 @@ class AcademicPeriodController extends Controller
             'nombre' => $request->nombre,
             'fecha_inicio' => $request->fecha_inicio,
             'fecha_fin' => $request->fecha_fin,
-            'activo' => $request->activo ?? true,
+            'activo' => $isActivo,
         ]);
 
         return response()->json($periodo, 201);
     }
-
 
     public function show($id)
     {
         return AcademicPeriod::findOrFail($id);
     }
 
- 
     public function update(Request $request, $id)
     {
         $periodo = AcademicPeriod::findOrFail($id);
+
+        if ($request->has('activo') && count($request->all()) === 1) {
+
+            if ($request->activo) {
+                AcademicPeriod::where('tenant_id', auth()->user()->tenant_id)
+                    ->update(['activo' => false]);
+            }
+
+            $periodo->update([
+                'activo' => $request->activo
+            ]);
+
+            return response()->json($periodo);
+        }
+
 
         $request->validate([
             'nombre' => 'required|string',
@@ -55,23 +71,24 @@ class AcademicPeriodController extends Controller
             'activo' => 'nullable|boolean',
         ]);
 
+        $isActivo = $request->activo ?? $periodo->activo;
 
-        if ($request->activo) {
+        if ($isActivo) {
             AcademicPeriod::where('tenant_id', auth()->user()->tenant_id)
+                ->where('id', '!=', $id)
                 ->update(['activo' => false]);
         }
 
-        $periodo->update($request->only([
-            'nombre',
-            'fecha_inicio',
-            'fecha_fin',
-            'activo'
-        ]));
+        $periodo->update([
+            'nombre' => $request->nombre,
+            'fecha_inicio' => $request->fecha_inicio,
+            'fecha_fin' => $request->fecha_fin,
+            'activo' => $isActivo,
+        ]);
 
         return response()->json($periodo);
     }
 
-  
     public function destroy($id)
     {
         AcademicPeriod::findOrFail($id)->delete();
@@ -81,9 +98,33 @@ class AcademicPeriodController extends Controller
         ]);
     }
 
-
     public function activo()
     {
-        return AcademicPeriod::where('activo', true)->first();
+        $periodo = AcademicPeriod::where('activo', true)->first();
+
+        if (!$periodo) {
+            return response()->json([
+                'message' => 'No hay periodo activo'
+            ], 404);
+        }
+
+        return response()->json($periodo);
+    }
+
+    public function activar($id)
+    {
+        $periodo = AcademicPeriod::findOrFail($id);
+        
+        AcademicPeriod::where('tenant_id', auth()->user()->tenant_id)
+            ->update(['activo' => false]);
+
+        $periodo->update([
+            'activo' => true
+        ]);
+
+        return response()->json([
+            'message' => 'Periodo activado correctamente',
+            'data' => $periodo
+        ]);
     }
 }

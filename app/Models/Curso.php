@@ -14,7 +14,8 @@ class Curso extends Model
         'nombre',
         'nivel',
         'descripcion',
-        'estado'
+        'estado',
+        'academic_period_id'
     ];
 
     public function paralelos()
