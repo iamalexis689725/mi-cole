@@ -6,34 +6,40 @@ use App\Http\Controllers\Controller;
 use App\Models\AsignacionDocente;
 use App\Models\Paralelo;
 use App\Models\Profesor;
+use App\Models\Curso;
 use Illuminate\Http\Request;
 
 class AsignacionDocenteController extends Controller
 {
-
-    public function index()
+    public function index($periodoId)
     {
         return AsignacionDocente::with([
             'profesor.user',
             'subject',
             'curso',
             'paralelo'
-        ])->get();
+        ])
+        ->where('academic_period_id', $periodoId)
+        ->get();
     }
 
-    public function show($id)
+    public function show($periodoId, $id)
     {
         return AsignacionDocente::with([
             'profesor.user',
             'subject',
             'curso',
             'paralelo'
-        ])->findOrFail($id);
+        ])
+        ->where('academic_period_id', $periodoId)
+        ->findOrFail($id);
     }
 
-    public function destroy($id)
+    public function destroy($periodoId, $id)
     {
-        $asignacion = AsignacionDocente::findOrFail($id);
+        $asignacion = AsignacionDocente::where('academic_period_id', $periodoId)
+            ->findOrFail($id);
+
         $asignacion->delete();
 
         return response()->json([
@@ -41,7 +47,7 @@ class AsignacionDocenteController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, $periodoId)
     {
         $request->validate([
             'profesor_id' => 'required|exists:profesores,id',
@@ -53,6 +59,18 @@ class AsignacionDocenteController extends Controller
             'hora_fin' => 'required|after:hora_inicio',
         ]);
 
+        
+        $curso = Curso::where('id', $request->curso_id)
+            ->where('academic_period_id', $periodoId)
+            ->first();
+
+        if (!$curso) {
+            return response()->json([
+                'message' => 'El curso no pertenece al periodo académico'
+            ], 422);
+        }
+
+        
         $subjectValido = Profesor::where('id', $request->profesor_id)
             ->whereHas('subjects', function ($q) use ($request) {
                 $q->where('subjects.id', $request->subject_id);
@@ -65,8 +83,7 @@ class AsignacionDocenteController extends Controller
             ], 422);
         }
 
-
-        // ✅ Validar que el paralelo pertenece al curso enviado
+        // ✅ Validar que el paralelo pertenece al curso
         $paraleloValido = Paralelo::where('id', $request->paralelo_id)
             ->where('curso_id', $request->curso_id)
             ->exists();
@@ -77,13 +94,13 @@ class AsignacionDocenteController extends Controller
             ], 422);
         }
 
-
-        // validacion de choque de horarios
+        
         $existe = AsignacionDocente::where('profesor_id', $request->profesor_id)
             ->where('dia', $request->dia)
+            ->where('academic_period_id', $periodoId)
             ->where(function ($q) use ($request) {
                 $q->where('hora_inicio', '<', $request->hora_fin)
-                    ->where('hora_fin', '>', $request->hora_inicio);
+                  ->where('hora_fin', '>', $request->hora_inicio);
             })
             ->exists();
 
@@ -98,10 +115,10 @@ class AsignacionDocenteController extends Controller
             'subject_id' => $request->subject_id,
             'curso_id' => $request->curso_id,
             'paralelo_id' => $request->paralelo_id,
+            'academic_period_id' => $periodoId,
             'dia' => $request->dia,
             'hora_inicio' => $request->hora_inicio,
             'hora_fin' => $request->hora_fin,
-            'tenant_id' => auth()->user()->tenant_id,
         ]);
 
         return response()->json([

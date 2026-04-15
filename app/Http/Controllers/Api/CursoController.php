@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AcademicPeriod;
 use App\Models\Curso;
 use Illuminate\Http\Request;
 
 class CursoController extends Controller
 {
-    
+
     public function index($periodoId)
     {
         return Curso::with('periodo', 'paralelos')
@@ -23,6 +24,16 @@ class CursoController extends Controller
             'nivel' => 'required|string',
             'descripcion' => 'nullable|string',
         ]);
+
+        $periodo = AcademicPeriod::where('id', $periodoId)
+            ->where('tenant_id', auth()->user()->tenant_id)
+            ->firstOrFail();
+
+        if (!$periodo->activo) {
+            return response()->json([
+                'message' => 'No se pueden crear cursos en un periodo inactivo'
+            ], 403);
+        }
 
         $curso = Curso::create([
             'nombre' => $request->nombre,

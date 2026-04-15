@@ -17,6 +17,7 @@ class AsignacionDocente extends Model
         'subject_id',
         'curso_id',
         'paralelo_id',
+        'academic_period_id',
         'dia',
         'hora_inicio',
         'hora_fin',
@@ -40,5 +41,10 @@ class AsignacionDocente extends Model
     public function paralelo()
     {
         return $this->belongsTo(Paralelo::class);
+    }
+
+    public function periodo()
+    {
+        return $this->belongsTo(AcademicPeriod::class, 'academic_period_id');
     }
 }
