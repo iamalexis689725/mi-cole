@@ -17,7 +17,9 @@ class ProfesorController extends Controller
 
     public function index()
     {
-        return Profesor::with(['user', 'subjects'])->get();
+        return Profesor::with(['user', 'subjects'])
+            ->where('tenant_id', auth()->user()->tenant_id)
+            ->get();
     }
 
 
@@ -27,7 +29,7 @@ class ProfesorController extends Controller
             'name' => 'required|string',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6',
-            'codigo_profesor' => 'required|unique:profesores',
+            'codigo_profesor' => 'required|string|unique:profesores,codigo_profesor,NULL,id,tenant_id,' . auth()->user()->tenant_id,
             'especialidad' => 'nullable|string'
         ]);
 
@@ -72,8 +74,7 @@ class ProfesorController extends Controller
             'name' => 'sometimes|string',
             'email' => 'sometimes|email|unique:users,email,' . $profesor->user->id,
             'password' => 'nullable|min:6',
-
-            'codigo_profesor' => 'sometimes|string|unique:profesores,codigo_profesor,' . $id,
+            'codigo_profesor' => 'sometimes|string|unique:profesores,codigo_profesor,' . $id . ',id,tenant_id,' . auth()->user()->tenant_id,
             'especialidad' => 'nullable|string'
         ]);
 
@@ -106,12 +107,11 @@ class ProfesorController extends Controller
 
     public function destroy($id)
     {
-        $profesor = Profesor::findOrFail($id);
-
+        $profesor = Profesor::with('user')->findOrFail($id);
         ProfesorSubject::where('profesor_id', $id)->delete();
-
-        $profesor->user()->delete();
+        $user = $profesor->user;
         $profesor->delete();
+        $user->delete();
 
         return response()->json([
             'message' => 'Profesor eliminado correctamente'

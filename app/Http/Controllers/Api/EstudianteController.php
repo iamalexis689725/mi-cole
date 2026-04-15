@@ -12,7 +12,9 @@ class EstudianteController extends Controller
 {
     public function index()
     {
-        return Estudiante::with('user')->get();
+        return Estudiante::with('user')
+            ->where('tenant_id', auth()->user()->tenant_id)
+            ->get();
     }
 
     public function show($id)
@@ -26,7 +28,7 @@ class EstudianteController extends Controller
             'name' => 'required|string',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6',
-            'codigo_estudiante' => 'required|string|unique:estudiantes',
+            'codigo_estudiante' => 'required|string|unique:estudiantes,codigo_estudiante,NULL,id,tenant_id,' . auth()->user()->tenant_id,
         ]);
 
         $user = User::create([
@@ -58,7 +60,7 @@ class EstudianteController extends Controller
             'name' => 'sometimes|string',
             'email' => 'sometimes|email|unique:users,email,' . $estudiante->user->id,
             'password' => 'nullable|min:6',
-            'codigo_estudiante' => 'sometimes|string|unique:estudiantes,codigo_estudiante,' . $id,
+            'codigo_estudiante' => 'sometimes|string|unique:estudiantes,codigo_estudiante,' . $id . ',id,tenant_id,' . auth()->user()->tenant_id,
         ]);
 
         $userData = $request->only(['name', 'email']);
@@ -87,10 +89,10 @@ class EstudianteController extends Controller
     {
         $estudiante = Estudiante::with('user')->findOrFail($id);
 
-        $estudiante->user->syncRoles([]);
-
-        $estudiante->user->delete();
+        $user = $estudiante->user;
+        $user->syncRoles([]);
         $estudiante->delete();
+        $user->delete();
 
         return response()->json([
             'message' => 'Estudiante eliminado correctamente'
