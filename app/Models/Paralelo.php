@@ -21,4 +21,9 @@ class Paralelo extends Model
     {
         return $this->belongsTo(Curso::class);
     }
+
+    public function inscripciones()
+    {
+        return $this->hasMany(Inscripcion::class);
+    }
 }

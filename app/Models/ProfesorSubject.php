@@ -16,4 +16,14 @@ class ProfesorSubject extends Model
         'profesor_id',
         'subject_id',
     ];
+
+    public function profesor()
+    {
+        return $this->belongsTo(Profesor::class);
+    }
+
+    public function subject()
+    {
+        return $this->belongsTo(Subject::class);
+    }
 }

@@ -14,7 +14,7 @@ class Estudiante extends Model
 
     protected $fillable = [
         'user_id',
-        'codigo_estudiante',  
+        'codigo_estudiante',
     ];
 
     public function user()
@@ -27,5 +27,10 @@ class Estudiante extends Model
         return $this->belongsToMany(PadreFamilia::class, 'padre_estudiante')
             ->withPivot('tenant_id', 'parentesco')
             ->wherePivot('tenant_id', auth()->user()->tenant_id);
+    }
+
+    public function inscripciones()
+    {
+        return $this->hasMany(Inscripcion::class);
     }
 }

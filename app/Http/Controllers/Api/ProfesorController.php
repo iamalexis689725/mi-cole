@@ -166,6 +166,37 @@ class ProfesorController extends Controller
         ], 201);
     }
 
+    public function quitarMateria(Request $request)
+    {
+        $request->validate([
+            'profesor_id' => [
+                'required',
+                Rule::exists('profesores', 'id')
+                    ->where('tenant_id', auth()->user()->tenant_id),
+            ],
+            'subject_id' => [
+                'required',
+                Rule::exists('subjects', 'id')
+                    ->where('tenant_id', auth()->user()->tenant_id),
+            ],
+        ]);
+
+        $deleted = ProfesorSubject::where('profesor_id', $request->profesor_id)
+            ->where('subject_id', $request->subject_id)
+            ->where('tenant_id', auth()->user()->tenant_id)
+            ->delete();
+
+        if (!$deleted) {
+            return response()->json([
+                'message' => 'La relación no existe'
+            ], 404);
+        }
+
+        return response()->json([
+            'message' => 'Materia eliminada correctamente'
+        ]);
+    }
+
 
     public function subjects($id)
     {

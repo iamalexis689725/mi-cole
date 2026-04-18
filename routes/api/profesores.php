@@ -28,4 +28,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::get('/profesores/{id}/horario', [ProfesorController::class, 'horario'])
         ->middleware('role:director');
+
+    Route::post('/profesores/quitar-materia', [ProfesorController::class, 'quitarMateria'])
+        ->middleware('role:director');
 });

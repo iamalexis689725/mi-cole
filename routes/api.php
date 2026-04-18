@@ -12,3 +12,5 @@ require __DIR__ . '/api/asignacionDocente.php';
 require __DIR__ . '/api/estudiantes.php';
 require __DIR__ . '/api/padreFamilia.php';
 require __DIR__ . '/api/academicPeriods.php';
+require __DIR__ . '/api/inscripcion.php';
+require __DIR__ . '/api/profesorSubject.php';

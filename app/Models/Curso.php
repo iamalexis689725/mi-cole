@@ -27,4 +27,9 @@ class Curso extends Model
     {
         return $this->belongsTo(AcademicPeriod::class, 'academic_period_id');
     }
+
+    public function inscripciones()
+    {
+        return $this->hasMany(Inscripcion::class);
+    }
 }

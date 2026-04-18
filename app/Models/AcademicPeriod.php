@@ -16,4 +16,9 @@ class AcademicPeriod extends Model
         "fecha_fin",
         "activo",
     ];
+
+    public function inscripciones()
+    {
+        return $this->hasMany(Inscripcion::class);
+    }
 }
