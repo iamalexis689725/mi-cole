@@ -16,4 +16,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::delete('/periodos/{periodo}/asignaciones/{id}', [AsignacionDocenteController::class, 'destroy'])
         ->middleware('role:director');
+
+    Route::get('/periodos/{periodo}/cursos/{curso}/paralelos/{paralelo}/horario', [AsignacionDocenteController::class, 'horarioCurso'])
+        ->middleware(['auth:sanctum', 'role:director']);
 });

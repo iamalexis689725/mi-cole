@@ -19,8 +19,8 @@ class AsignacionDocenteController extends Controller
             'curso',
             'paralelo'
         ])
-        ->where('academic_period_id', $periodoId)
-        ->get();
+            ->where('academic_period_id', $periodoId)
+            ->get();
     }
 
     public function show($periodoId, $id)
@@ -31,8 +31,8 @@ class AsignacionDocenteController extends Controller
             'curso',
             'paralelo'
         ])
-        ->where('academic_period_id', $periodoId)
-        ->findOrFail($id);
+            ->where('academic_period_id', $periodoId)
+            ->findOrFail($id);
     }
 
     public function destroy($periodoId, $id)
@@ -59,7 +59,7 @@ class AsignacionDocenteController extends Controller
             'hora_fin' => 'required|after:hora_inicio',
         ]);
 
-        
+
         $curso = Curso::where('id', $request->curso_id)
             ->where('academic_period_id', $periodoId)
             ->first();
@@ -70,7 +70,7 @@ class AsignacionDocenteController extends Controller
             ], 422);
         }
 
-        
+
         $subjectValido = Profesor::where('id', $request->profesor_id)
             ->whereHas('subjects', function ($q) use ($request) {
                 $q->where('subjects.id', $request->subject_id);
@@ -83,7 +83,6 @@ class AsignacionDocenteController extends Controller
             ], 422);
         }
 
-        // ✅ Validar que el paralelo pertenece al curso
         $paraleloValido = Paralelo::where('id', $request->paralelo_id)
             ->where('curso_id', $request->curso_id)
             ->exists();
@@ -94,13 +93,28 @@ class AsignacionDocenteController extends Controller
             ], 422);
         }
 
-        
+        $conflictoCurso = AsignacionDocente::where('curso_id', $request->curso_id)
+            ->where('paralelo_id', $request->paralelo_id)
+            ->where('dia', $request->dia)
+            ->where('academic_period_id', $periodoId)
+            ->where(function ($q) use ($request) {
+                $q->where('hora_inicio', '<', $request->hora_fin)
+                    ->where('hora_fin', '>', $request->hora_inicio);
+            })
+            ->exists();
+
+        if ($conflictoCurso) {
+            return response()->json([
+                'message' => 'El curso ya tiene una materia en ese horario'
+            ], 422);
+        }
+
         $existe = AsignacionDocente::where('profesor_id', $request->profesor_id)
             ->where('dia', $request->dia)
             ->where('academic_period_id', $periodoId)
             ->where(function ($q) use ($request) {
                 $q->where('hora_inicio', '<', $request->hora_fin)
-                  ->where('hora_fin', '>', $request->hora_inicio);
+                    ->where('hora_fin', '>', $request->hora_inicio);
             })
             ->exists();
 
@@ -130,5 +144,40 @@ class AsignacionDocenteController extends Controller
                 'paralelo'
             ])
         ], 201);
+    }
+
+    public function horarioCurso($periodoId, $cursoId, $paraleloId)
+    {
+        $asignaciones = AsignacionDocente::with([
+            'profesor.user',
+            'subject'
+        ])
+            ->where('academic_period_id', $periodoId)
+            ->where('curso_id', $cursoId)
+            ->where('paralelo_id', $paraleloId)
+            ->orderBy('hora_inicio')
+            ->get()
+            ->map(fn($a) => [
+                'id'          => $a->id,
+                'dia'         => $a->dia,
+                'hora_inicio' => $a->hora_inicio,
+                'hora_fin'    => $a->hora_fin,
+                'materia'     => $a->subject->name,
+                'profesor'    => $a->profesor->user->name,
+            ])
+            ->groupBy('dia');
+
+        $orden = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+
+        $horario = collect($orden)
+            ->filter(fn($dia) => $asignaciones->has($dia))
+            ->mapWithKeys(fn($dia) => [$dia => $asignaciones[$dia]]);
+
+        return response()->json([
+            'curso_id' => $cursoId,
+            'paralelo_id' => $paraleloId,
+            'periodo_id' => $periodoId,
+            'horario' => $horario
+        ]);
     }
 }
