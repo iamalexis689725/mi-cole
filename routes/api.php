@@ -14,3 +14,4 @@ require __DIR__ . '/api/padreFamilia.php';
 require __DIR__ . '/api/academicPeriods.php';
 require __DIR__ . '/api/inscripcion.php';
 require __DIR__ . '/api/profesorSubject.php';
+require __DIR__ . '/api/circulares.php';
