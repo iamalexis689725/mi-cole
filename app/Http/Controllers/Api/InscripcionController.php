@@ -136,7 +136,7 @@ class InscripcionController extends Controller
                     ->where('tenant_id', auth()->user()->tenant_id),
             ],
         ]);
-        
+
         $curso_id = $request->curso_id ?? $enrollment->curso_id;
         $paralelo_id = $request->paralelo_id ?? $enrollment->paralelo_id;
 
@@ -192,6 +192,29 @@ class InscripcionController extends Controller
 
         return response()->json([
             'message' => 'Inscripción eliminada correctamente'
+        ]);
+    }
+
+    public function estudiantesPorClase($periodoId, $cursoId, $paraleloId)
+    {
+        $estudiantes = Inscripcion::with([
+            'estudiante.user'
+        ])
+            ->where('academic_period_id', $periodoId)
+            ->where('curso_id', $cursoId)
+            ->where('paralelo_id', $paraleloId)
+            ->get()
+            ->map(fn($i) => [
+                'id' => $i->estudiante->id,
+                'nombre' => $i->estudiante->user->name,
+                'email' => $i->estudiante->user->email,
+            ]);
+
+        return response()->json([
+            'periodo_id' => $periodoId,
+            'curso_id' => $cursoId,
+            'paralelo_id' => $paraleloId,
+            'estudiantes' => $estudiantes
         ]);
     }
 }

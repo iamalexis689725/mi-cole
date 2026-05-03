@@ -17,7 +17,7 @@ class AcademicPeriodController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nombre' => 'required|string',
+            'nombre' => 'required|unique:academic_periods,nombre',
             'fecha_inicio' => 'required|date',
             'fecha_fin' => 'required|date|after:fecha_inicio',
             'activo' => 'nullable|boolean',

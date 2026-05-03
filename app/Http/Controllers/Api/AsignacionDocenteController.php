@@ -23,6 +23,44 @@ class AsignacionDocenteController extends Controller
             ->get();
     }
 
+    //endpoint para solo profesor
+    public function misClases($periodoId)
+    {
+        $user = auth()->user();
+
+        $profesor = Profesor::where('user_id', $user->id)->first();
+
+        if (!$profesor) {
+            return response()->json([
+                'message' => 'No eres un profesor'
+            ], 403);
+        }
+
+        $asignaciones = AsignacionDocente::with([
+            'subject',
+            'curso',
+            'paralelo'
+        ])
+            ->where('profesor_id', $profesor->id)
+            ->where('academic_period_id', $periodoId)
+            ->get()
+            ->map(function ($a) {
+                return [
+                    'id' => $a->id,
+                    'curso' => $a->curso->nombre,
+                    'paralelo' => $a->paralelo->nombre,
+                    'materia' => $a->subject->name,
+                    'curso_id' => $a->curso_id,
+                    'paralelo_id' => $a->paralelo_id,
+                    'subject_id' => $a->subject_id,
+                ];
+            });
+
+        return response()->json([
+            'asignaciones' => $asignaciones
+        ]);
+    }
+
     public function show($periodoId, $id)
     {
         return AsignacionDocente::with([

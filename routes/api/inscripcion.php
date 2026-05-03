@@ -11,4 +11,9 @@ Route::middleware(['auth:sanctum', 'role:director'])->group(function () {
     Route::put('/inscripciones/{id}', [InscripcionController::class, 'update']);
     Route::delete('/inscripciones/{id}', [InscripcionController::class, 'destroy']);
 
+    //profesor
+    Route::get(
+        '/periodos/{periodo}/cursos/{curso}/paralelos/{paralelo}/estudiantes',
+        [InscripcionController::class, 'estudiantesPorClase']
+    )->middleware(['auth:sanctum', 'role:profesor']);
 });

@@ -19,4 +19,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::get('/periodos/{periodo}/cursos/{curso}/paralelos/{paralelo}/horario', [AsignacionDocenteController::class, 'horarioCurso'])
         ->middleware(['auth:sanctum', 'role:director']);
+
+    Route::get('/periodos/{periodo}/mis-clases', [AsignacionDocenteController::class, 'misClases'])
+        ->middleware(['auth:sanctum', 'role:profesor']);
 });

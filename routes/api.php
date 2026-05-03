@@ -15,3 +15,5 @@ require __DIR__ . '/api/academicPeriods.php';
 require __DIR__ . '/api/inscripcion.php';
 require __DIR__ . '/api/profesorSubject.php';
 require __DIR__ . '/api/circulares.php';
+require __DIR__ . '/api/agenda.php';
+require __DIR__ . '/api/notas.php';

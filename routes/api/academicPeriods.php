@@ -6,7 +6,7 @@ use App\Http\Controllers\Api\AcademicPeriodController;
 Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::get('/periodos', [AcademicPeriodController::class, 'index'])
-        ->middleware('role:director');
+        ->middleware('role:director|profesor');
 
     Route::post('/periodos', [AcademicPeriodController::class, 'store'])
         ->middleware('role:director');
