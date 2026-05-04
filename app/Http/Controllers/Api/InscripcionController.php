@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AcademicPeriod;
 use App\Models\Inscripcion;
 use App\Models\Paralelo;
 use Illuminate\Http\Request;
@@ -10,35 +11,31 @@ use Illuminate\Validation\Rule;
 
 class InscripcionController extends Controller
 {
-    public function index()
+    public function index($periodoId)
     {
-        $enrollments = Inscripcion::with([
+        return Inscripcion::with([
             'estudiante.user',
             'curso',
             'paralelo',
             'periodo'
-        ])->get();
-
-        return response()->json([
-            'data' => $enrollments
-        ]);
+        ])
+            ->where('academic_period_id', $periodoId)
+            ->get();
     }
 
-    public function show($id)
+    public function show($periodoId, $id)
     {
-        $enrollment = Inscripcion::with([
+        return Inscripcion::with([
             'estudiante.user',
             'curso',
             'paralelo',
             'periodo'
-        ])->findOrFail($id);
-
-        return response()->json([
-            'data' => $enrollment
-        ]);
+        ])
+            ->where('academic_period_id', $periodoId)
+            ->findOrFail($id);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, $periodoId)
     {
         $request->validate([
             'estudiante_id' => [
@@ -56,13 +53,20 @@ class InscripcionController extends Controller
                 Rule::exists('paralelos', 'id')
                     ->where('tenant_id', auth()->user()->tenant_id),
             ],
-            'academic_period_id' => [
-                'required',
-                Rule::exists('academic_periods', 'id')
-                    ->where('tenant_id', auth()->user()->tenant_id),
-            ],
         ]);
 
+        // validar periodo pertenece al tenant
+        $periodo = AcademicPeriod::where('id', $periodoId)
+            ->where('tenant_id', auth()->user()->tenant_id)
+            ->firstOrFail();
+
+        if (!$periodo->activo) {
+            return response()->json([
+                'message' => 'No se pueden hacer inscripciones en un periodo inactivo'
+            ], 403);
+        }
+
+        // validar relación curso - paralelo
         $paralelo = Paralelo::findOrFail($request->paralelo_id);
 
         if ($paralelo->curso_id != $request->curso_id) {
@@ -71,8 +75,9 @@ class InscripcionController extends Controller
             ], 422);
         }
 
+        // validar duplicado
         $existe = Inscripcion::where('estudiante_id', $request->estudiante_id)
-            ->where('academic_period_id', $request->academic_period_id)
+            ->where('academic_period_id', $periodoId)
             ->exists();
 
         if ($existe) {
@@ -85,12 +90,11 @@ class InscripcionController extends Controller
             'estudiante_id' => $request->estudiante_id,
             'curso_id' => $request->curso_id,
             'paralelo_id' => $request->paralelo_id,
-            'academic_period_id' => $request->academic_period_id,
-            // tenant_id se asigna automáticamente por el trait
+            'academic_period_id' => $periodoId,
         ]);
 
         return response()->json([
-            'message' => 'Estudiante inscrito correctamente',
+            'message' => 'Inscripción creada',
             'data' => $inscripcion->load([
                 'estudiante.user',
                 'curso',
@@ -100,9 +104,10 @@ class InscripcionController extends Controller
         ], 201);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, $periodoId, $id)
     {
-        $enrollment = Inscripcion::findOrFail($id);
+        $inscripcion = Inscripcion::where('academic_period_id', $periodoId)
+            ->findOrFail($id);
 
         $request->validate([
             'estudiante_id' => [
@@ -120,15 +125,10 @@ class InscripcionController extends Controller
                 Rule::exists('paralelos', 'id')
                     ->where('tenant_id', auth()->user()->tenant_id),
             ],
-            'academic_period_id' => [
-                'sometimes',
-                Rule::exists('academic_periods', 'id')
-                    ->where('tenant_id', auth()->user()->tenant_id),
-            ],
         ]);
 
-        $curso_id = $request->curso_id ?? $enrollment->curso_id;
-        $paralelo_id = $request->paralelo_id ?? $enrollment->paralelo_id;
+        $curso_id = $request->curso_id ?? $inscripcion->curso_id;
+        $paralelo_id = $request->paralelo_id ?? $inscripcion->paralelo_id;
 
         $existeRelacion = Paralelo::where('id', $paralelo_id)
             ->where('curso_id', $curso_id)
@@ -140,10 +140,10 @@ class InscripcionController extends Controller
             ], 422);
         }
 
-        if ($request->has('estudiante_id') || $request->has('academic_period_id')) {
-            $existe = Inscripcion::where('estudiante_id', $request->estudiante_id ?? $enrollment->estudiante_id)
-                ->where('academic_period_id', $request->academic_period_id ?? $enrollment->academic_period_id)
-                ->where('id', '!=', $enrollment->id)
+        if ($request->has('estudiante_id')) {
+            $existe = Inscripcion::where('estudiante_id', $request->estudiante_id)
+                ->where('academic_period_id', $periodoId)
+                ->where('id', '!=', $inscripcion->id)
                 ->exists();
 
             if ($existe) {
@@ -153,16 +153,15 @@ class InscripcionController extends Controller
             }
         }
 
-        $enrollment->update($request->only([
+        $inscripcion->update($request->only([
             'estudiante_id',
             'curso_id',
             'paralelo_id',
-            'academic_period_id',
         ]));
 
         return response()->json([
-            'message' => 'Inscripción actualizada correctamente',
-            'data' => $enrollment->load([
+            'message' => 'Inscripción actualizada',
+            'data' => $inscripcion->load([
                 'estudiante.user',
                 'curso',
                 'paralelo',
@@ -171,17 +170,18 @@ class InscripcionController extends Controller
         ]);
     }
 
-    public function destroy($id)
+    public function destroy($periodoId, $id)
     {
-        $enrollment = Inscripcion::findOrFail($id);
-        $enrollment->delete();
+        Inscripcion::where('academic_period_id', $periodoId)
+            ->findOrFail($id)
+            ->delete();
 
         return response()->json([
-            'message' => 'Inscripción eliminada correctamente'
+            'message' => 'Inscripción eliminada'
         ]);
     }
 
-    // 🔥 ESTE ES EL QUE USA EL PROFESOR
+    // PROFESOR (se queda igual)
     public function estudiantesPorClase($periodoId, $cursoId, $paraleloId)
     {
         $estudiantes = Inscripcion::with('estudiante.user')
