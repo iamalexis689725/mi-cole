@@ -17,15 +17,12 @@ class InscripcionController extends Controller
             'curso',
             'paralelo',
             'periodo'
-        ])
-            ->where('tenant_id', auth()->user()->tenant_id)
-            ->get();
+        ])->get();
 
         return response()->json([
             'data' => $enrollments
         ]);
     }
-
 
     public function show($id)
     {
@@ -34,15 +31,12 @@ class InscripcionController extends Controller
             'curso',
             'paralelo',
             'periodo'
-        ])
-            ->where('tenant_id', auth()->user()->tenant_id)
-            ->findOrFail($id);
+        ])->findOrFail($id);
 
         return response()->json([
             'data' => $enrollment
         ]);
     }
-
 
     public function store(Request $request)
     {
@@ -69,7 +63,6 @@ class InscripcionController extends Controller
             ],
         ]);
 
-
         $paralelo = Paralelo::findOrFail($request->paralelo_id);
 
         if ($paralelo->curso_id != $request->curso_id) {
@@ -80,7 +73,6 @@ class InscripcionController extends Controller
 
         $existe = Inscripcion::where('estudiante_id', $request->estudiante_id)
             ->where('academic_period_id', $request->academic_period_id)
-            ->where('tenant_id', auth()->user()->tenant_id)
             ->exists();
 
         if ($existe) {
@@ -94,7 +86,7 @@ class InscripcionController extends Controller
             'curso_id' => $request->curso_id,
             'paralelo_id' => $request->paralelo_id,
             'academic_period_id' => $request->academic_period_id,
-            'tenant_id' => auth()->user()->tenant_id,
+            // tenant_id se asigna automáticamente por el trait
         ]);
 
         return response()->json([
@@ -108,11 +100,9 @@ class InscripcionController extends Controller
         ], 201);
     }
 
-
     public function update(Request $request, $id)
     {
-        $enrollment = Inscripcion::where('tenant_id', auth()->user()->tenant_id)
-            ->findOrFail($id);
+        $enrollment = Inscripcion::findOrFail($id);
 
         $request->validate([
             'estudiante_id' => [
@@ -153,7 +143,6 @@ class InscripcionController extends Controller
         if ($request->has('estudiante_id') || $request->has('academic_period_id')) {
             $existe = Inscripcion::where('estudiante_id', $request->estudiante_id ?? $enrollment->estudiante_id)
                 ->where('academic_period_id', $request->academic_period_id ?? $enrollment->academic_period_id)
-                ->where('tenant_id', auth()->user()->tenant_id)
                 ->where('id', '!=', $enrollment->id)
                 ->exists();
 
@@ -182,12 +171,9 @@ class InscripcionController extends Controller
         ]);
     }
 
-
     public function destroy($id)
     {
-        $enrollment = Inscripcion::where('tenant_id', auth()->user()->tenant_id)
-            ->findOrFail($id);
-
+        $enrollment = Inscripcion::findOrFail($id);
         $enrollment->delete();
 
         return response()->json([
@@ -195,20 +181,21 @@ class InscripcionController extends Controller
         ]);
     }
 
+    // 🔥 ESTE ES EL QUE USA EL PROFESOR
     public function estudiantesPorClase($periodoId, $cursoId, $paraleloId)
     {
-        $estudiantes = Inscripcion::with([
-            'estudiante.user'
-        ])
+        $estudiantes = Inscripcion::with('estudiante.user')
             ->where('academic_period_id', $periodoId)
             ->where('curso_id', $cursoId)
             ->where('paralelo_id', $paraleloId)
+            ->orderBy('id')
             ->get()
             ->map(fn($i) => [
                 'id' => $i->estudiante->id,
                 'nombre' => $i->estudiante->user->name,
                 'email' => $i->estudiante->user->email,
-            ]);
+            ])
+            ->values();
 
         return response()->json([
             'periodo_id' => $periodoId,
