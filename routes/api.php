@@ -17,3 +17,4 @@ require __DIR__ . '/api/profesorSubject.php';
 require __DIR__ . '/api/circulares.php';
 require __DIR__ . '/api/agenda.php';
 require __DIR__ . '/api/notas.php';
+require __DIR__ . '/api/asistencia.php';
