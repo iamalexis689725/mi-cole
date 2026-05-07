@@ -8,18 +8,18 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/periodos/{periodo}/asignaciones', [AsignacionDocenteController::class, 'index'])
         ->middleware('role:director');
 
-    Route::post('/periodos/{periodo}/asignaciones', [AsignacionDocenteController::class, 'store'])
+    Route::get('/periodos/{periodo}/asignaciones/mis-clases', [AsignacionDocenteController::class, 'misClases'])
+        ->middleware(['auth:sanctum', 'role:profesor']);
+    
+    Route::get('/periodos/{periodo}/asignaciones/{id}', [AsignacionDocenteController::class, 'show'])
         ->middleware('role:director');
 
-    Route::get('/periodos/{periodo}/asignaciones/{id}', [AsignacionDocenteController::class, 'show'])
+    Route::post('/periodos/{periodo}/asignaciones', [AsignacionDocenteController::class, 'store'])
         ->middleware('role:director');
 
     Route::delete('/periodos/{periodo}/asignaciones/{id}', [AsignacionDocenteController::class, 'destroy'])
         ->middleware('role:director');
 
     Route::get('/periodos/{periodo}/cursos/{curso}/paralelos/{paralelo}/horario', [AsignacionDocenteController::class, 'horarioCurso'])
-        ->middleware(['auth:sanctum', 'role:director']);
-
-    Route::get('/periodos/{periodo}/mis-clases', [AsignacionDocenteController::class, 'misClases'])
-        ->middleware(['auth:sanctum', 'role:profesor']);
+        ->middleware(['auth:sanctum', 'role:director']); 
 });

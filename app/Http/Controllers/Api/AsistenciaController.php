@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 
 class AsistenciaController extends Controller
 {
-    public function store(Request $request, $periodoId, $cursoId, $paraleloId)
+    public function store(Request $request, $periodoId, $asignacionId)
     {
         $request->validate([
             'fecha' => 'required|date',
@@ -20,30 +20,25 @@ class AsistenciaController extends Controller
             'asistencias.*.observacion' => 'nullable|string'
         ]);
 
-        // 🔥 1. Obtener asignación (CLAVE DEL SISTEMA)
-        $asignacion = AsignacionDocente::where('academic_period_id', $periodoId)
-            ->where('curso_id', $cursoId)
-            ->where('paralelo_id', $paraleloId)
+        $asignacion = AsignacionDocente::where('id', $asignacionId)
+            ->where('academic_period_id', $periodoId)
             ->firstOrFail();
 
-        // 🔥 2. Evitar duplicado de asistencia
         $existe = Asistencia::where('asignacion_docente_id', $asignacion->id)
             ->where('fecha', $request->fecha)
             ->exists();
 
         if ($existe) {
             return response()->json([
-                'message' => 'Ya se registró asistencia para esta fecha'
+                'message' => 'Ya se registró asistencia para esta materia en esta fecha'
             ], 409);
         }
 
-        // 🔥 3. Crear asistencia
         $asistencia = Asistencia::create([
             'asignacion_docente_id' => $asignacion->id,
             'fecha' => $request->fecha,
         ]);
 
-        // 🔥 4. Guardar detalles
         foreach ($request->asistencias as $item) {
             AsistenciaDetalle::create([
                 'asistencia_id' => $asistencia->id,
@@ -59,11 +54,10 @@ class AsistenciaController extends Controller
         ], 201);
     }
 
-    public function show($periodoId, $cursoId, $paraleloId, $fecha)
+    public function show($periodoId, $asignacionId, $fecha)
     {
-        $asignacion = AsignacionDocente::where('academic_period_id', $periodoId)
-            ->where('curso_id', $cursoId)
-            ->where('paralelo_id', $paraleloId)
+        $asignacion = AsignacionDocente::where('id', $asignacionId)
+            ->where('academic_period_id', $periodoId)
             ->firstOrFail();
 
         $asistencia = Asistencia::with('detalles.estudiante.user')
@@ -111,11 +105,10 @@ class AsistenciaController extends Controller
         ]);
     }
 
-    public function index($periodoId, $cursoId, $paraleloId)
+    public function index($periodoId, $asignacionId)
     {
-        $asignacion = AsignacionDocente::where('academic_period_id', $periodoId)
-            ->where('curso_id', $cursoId)
-            ->where('paralelo_id', $paraleloId)
+        $asignacion = AsignacionDocente::where('id', $asignacionId)
+            ->where('academic_period_id', $periodoId)
             ->firstOrFail();
 
         $asistencias = Asistencia::where('asignacion_docente_id', $asignacion->id)

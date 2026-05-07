@@ -6,13 +6,22 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth:sanctum', 'role:profesor'])->group(function () {
 
     Route::post(
-        '/periodos/{periodo}/cursos/{curso}/paralelos/{paralelo}/asistencia',
+        '/periodos/{periodo}/asignaciones/{asignacion}/asistencia',
         [AsistenciaController::class, 'store']
     );
 
     Route::get(
-        '/periodos/{periodo}/cursos/{curso}/paralelos/{paralelo}/asistencia/{fecha}',
-        [AsistenciaController::class, 'showByDate']
+        '/periodos/{periodo}/asignaciones/{asignacion}/asistencia/{fecha}',
+        [AsistenciaController::class, 'show']
     );
 
+    Route::get(
+        '/periodos/{periodo}/asignaciones/{asignacion}/asistencia',
+        [AsistenciaController::class, 'index']
+    );
+
+    Route::put(
+        '/asistencia/{id}',
+        [AsistenciaController::class, 'update']
+    );
 });
