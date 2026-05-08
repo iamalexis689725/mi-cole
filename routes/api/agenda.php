@@ -3,13 +3,35 @@
 use App\Http\Controllers\Api\AgendaController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('agenda')->middleware('auth:sanctum')->group(function () {
-    
-    Route::get('/{asignacionId}', [AgendaController::class, 'index']);
+Route::middleware(['auth:sanctum', 'role:profesor'])->group(function () {
 
-    Route::middleware('role:profesor')->group(function () {
-        Route::post('/', [AgendaController::class, 'store']);
-        Route::delete('/{id}', [AgendaController::class, 'destroy']);
-    });
+    Route::get(
+        '/periodos/{periodo}/asignaciones/{asignacion}/agenda',
+        [AgendaController::class, 'index']
+    );
 
+    Route::post(
+        '/periodos/{periodo}/asignaciones/{asignacion}/agenda',
+        [AgendaController::class, 'store']
+    );
+
+    Route::get(
+        '/agenda/{id}',
+        [AgendaController::class, 'show']
+    );
+
+    Route::put(
+        '/agenda/{id}',
+        [AgendaController::class, 'update']
+    );
+
+    Route::delete(
+        '/agenda/{id}',
+        [AgendaController::class, 'destroy']
+    );
+
+    Route::post(
+        '/agenda/{id}/subir-archivo',
+        [AgendaController::class, 'subirArchivo']
+    );
 });

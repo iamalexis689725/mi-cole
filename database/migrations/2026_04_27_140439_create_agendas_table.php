@@ -9,15 +9,25 @@ return new class extends Migration
     public function up()
     {
         Schema::create('agendas', function (Blueprint $table) {
+
             $table->id();
+
             $table->foreignId('asignacion_docente_id')
                 ->constrained('asignaciones_docente')
                 ->cascadeOnDelete();
+
             $table->string('titulo');
+
             $table->text('descripcion')->nullable();
+
             $table->enum('tipo', ['tarea', 'examen', 'recurso']);
-            $table->date('fecha_entrega')->nullable();
+
+            $table->dateTime('fecha_entrega')->nullable();
+
             $table->string('archivo')->nullable();
+
+            $table->foreignId('tenant_id')->constrained('tenants')->onDelete('cascade');
+            
             $table->timestamps();
         });
     }

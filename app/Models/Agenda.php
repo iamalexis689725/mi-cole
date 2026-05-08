@@ -21,6 +21,9 @@ class Agenda extends Model
 
     public function asignacion()
     {
-        return $this->belongsTo(AsignacionDocente::class);
+        return $this->belongsTo(
+            AsignacionDocente::class,
+            'asignacion_docente_id'
+        );
     }
 }
