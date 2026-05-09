@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Agenda;
+use App\Models\AgendaArchivo;
 use App\Models\AsignacionDocente;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -17,6 +18,7 @@ class AgendaController extends Controller
             ->firstOrFail();
 
         $agenda = Agenda::with([
+            'archivos',
             'asignacion.profesor.user',
             'asignacion.subject',
             'asignacion.curso',
@@ -36,11 +38,17 @@ class AgendaController extends Controller
                     'descripcion' => $a->descripcion,
                     'tipo' => $a->tipo,
                     'fecha_entrega' => $a->fecha_entrega,
-                    'archivo' => $a->archivo,
                     'materia' => $a->asignacion->subject->name,
                     'profesor' => $a->asignacion->profesor->user->name,
                     'curso' => $a->asignacion->curso->nombre,
                     'paralelo' => $a->asignacion->paralelo->nombre,
+                    'archivos' => $a->archivos->map(function ($archivo) {
+                        return [
+                            'id' => $archivo->id,
+                            'nombre_original' => $archivo->nombre_original,
+                            'url' => Storage::url($archivo->archivo)
+                        ];
+                    }),
                 ];
             })
         );
@@ -116,31 +124,93 @@ class AgendaController extends Controller
     public function subirArchivo(Request $request, $id)
     {
         $request->validate([
-            'archivo' => 'required|mimes:pdf,doc,docx,png,jpg,jpeg|max:10240'
+            'archivos' => 'required|array',
+            'archivos.*' => 'file|mimes:pdf,doc,docx,png,jpg,jpeg|max:10240'
         ]);
 
         $agenda = Agenda::findOrFail($id);
 
-        if ($agenda->archivo) {
-            Storage::disk('public')->delete($agenda->archivo);
+        $subidos = [];
+
+        foreach ($request->file('archivos') as $archivo) {
+
+            $nombre = time() . '_' . $archivo->getClientOriginalName();
+
+            $path = $archivo->storeAs(
+                'agendas',
+                $nombre,
+                'public'
+            );
+
+            $nuevo = AgendaArchivo::create([
+                'agenda_id' => $agenda->id,
+                'archivo' => $path,
+                'nombre_original' => $archivo->getClientOriginalName(),
+            ]);
+
+            $subidos[] = [
+                'id' => $nuevo->id,
+                'archivo' => $nuevo->archivo,
+                'nombre_original' => $nuevo->nombre_original,
+                'url' => Storage::url($nuevo->archivo)
+            ];
         }
 
-        $archivo = $request->file('archivo');
-        $nombre = time() . '_' . $archivo->getClientOriginalName();
-        $path = $archivo->storeAs(
+        return response()->json([
+            'message' => 'Archivos subidos correctamente',
+            'archivos' => $subidos
+        ]);
+    }
+
+    public function eliminarArchivo($id)
+    {
+        $archivo = AgendaArchivo::findOrFail($id);
+
+        Storage::disk('public')->delete($archivo->archivo);
+
+        $archivo->delete();
+
+        return response()->json([
+            'message' => 'Archivo eliminado correctamente'
+        ]);
+    }
+
+    public function reemplazarArchivo(Request $request, $id)
+    {
+        $request->validate([
+            'archivo' => 'required|file|mimes:pdf,doc,docx,png,jpg,jpeg|max:10240'
+        ]);
+
+        $archivo = AgendaArchivo::findOrFail($id);
+
+        // eliminar archivo viejo
+        Storage::disk('public')->delete($archivo->archivo);
+
+        // nuevo archivo
+        $nuevoArchivo = $request->file('archivo');
+
+        $nombre = time() . '_' . $nuevoArchivo->getClientOriginalName();
+
+        $path = $nuevoArchivo->storeAs(
             'agendas',
             $nombre,
             'public'
         );
 
-        $agenda->archivo = $path;
-
-        $agenda->save();
+        // actualizar BD
+        $archivo->update([
+            'archivo' => $path,
+            'nombre_original' => $nuevoArchivo->getClientOriginalName(),
+        ]);
 
         return response()->json([
-            'message' => 'Archivo subido correctamente',
-            'archivo' => $path,
-            'url' => Storage::url($path)
+            'message' => 'Archivo reemplazado correctamente',
+
+            'data' => [
+                'id' => $archivo->id,
+                'nombre_original' => $archivo->nombre_original,
+                'url' => Storage::url($archivo->archivo)
+            ]
         ]);
     }
 }

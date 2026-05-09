@@ -34,4 +34,14 @@ Route::middleware(['auth:sanctum', 'role:profesor'])->group(function () {
         '/agenda/{id}/subir-archivo',
         [AgendaController::class, 'subirArchivo']
     );
+
+    Route::delete(
+        '/agenda-archivos/{id}',
+        [AgendaController::class, 'eliminarArchivo']
+    );
+
+    Route::post(
+        '/agenda-archivos/{id}/reemplazar',
+        [AgendaController::class, 'reemplazarArchivo']
+    );
 });

@@ -26,4 +26,9 @@ class Agenda extends Model
             'asignacion_docente_id'
         );
     }
+
+    public function archivos()
+    {
+        return $this->hasMany(AgendaArchivo::class);
+    }
 }
