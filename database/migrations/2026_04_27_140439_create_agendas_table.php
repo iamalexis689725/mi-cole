@@ -17,17 +17,11 @@ return new class extends Migration
                 ->cascadeOnDelete();
 
             $table->string('titulo');
-
             $table->text('descripcion')->nullable();
-
             $table->enum('tipo', ['tarea', 'examen', 'recurso']);
-
             $table->dateTime('fecha_entrega')->nullable();
-
             $table->string('archivo')->nullable();
-
             $table->foreignId('tenant_id')->constrained('tenants')->onDelete('cascade');
-            
             $table->timestamps();
         });
     }
