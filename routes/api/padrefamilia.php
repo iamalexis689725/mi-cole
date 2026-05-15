@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\PadreAgendaController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\PadreFamiliaController;
 
@@ -25,4 +26,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::get('/padre-familias/{id}/estudiantes', [PadreFamiliaController::class, 'estudiantes'])
         ->middleware('role:director');
+
+    Route::get(
+        '/padre/mis-hijos/agendas',
+        [PadreAgendaController::class, 'tareasPendientes']
+    )->middleware('role:padre');
 });
