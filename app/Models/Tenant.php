@@ -10,4 +10,10 @@ class Tenant extends Model
     use HasFactory;
 
     protected $fillable = ['name','slug','logo'];
+
+    public function modules()
+    {
+        return $this->belongsToMany(Module::class, 'tenant_modules')
+            ->withPivot('activo')->withTimestamps();
+    }
 }

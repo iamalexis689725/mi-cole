@@ -3,7 +3,7 @@
 use App\Http\Controllers\Api\AsistenciaController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'role:profesor'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:profesor', 'module:asistencia'])->group(function () {
 
     Route::post(
         '/periodos/{periodo}/asignaciones/{asignacion}/asistencia',

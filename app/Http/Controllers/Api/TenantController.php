@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Module;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -44,6 +45,14 @@ class TenantController extends Controller
             ]);
 
             $director->assignRole('director');
+
+            $modules = Module::all();
+
+            foreach ($modules as $module) {
+                $tenant->modules()->attach($module->id, [
+                    'activo' => false
+                ]);
+            }
 
             DB::commit();
 

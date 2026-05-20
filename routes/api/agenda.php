@@ -3,7 +3,7 @@
 use App\Http\Controllers\Api\AgendaController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'role:profesor'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:profesor', 'module:agenda'])->group(function () {
 
     Route::get(
         '/periodos/{periodo}/asignaciones/{asignacion}/agenda',

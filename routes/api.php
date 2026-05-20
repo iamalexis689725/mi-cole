@@ -19,3 +19,4 @@ require __DIR__ . '/api/agenda.php';
 require __DIR__ . '/api/notas.php';
 require __DIR__ . '/api/asistencia.php';
 require __DIR__ . '/api/anecdotario.php';
+require __DIR__ . '/api/tenantModules.php';
