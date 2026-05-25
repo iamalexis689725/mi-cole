@@ -10,10 +10,17 @@ class Nota extends Model
 {
     use HasFactory, BelongsToTenant;
 
+    protected $table = 'notas';
+
     protected $fillable = [
         'criterio_id',
         'estudiante_id',
         'nota',
+        'observacion',
+    ];
+
+    protected $casts = [
+        'nota' => 'decimal:2',
     ];
 
     public function estudiante()

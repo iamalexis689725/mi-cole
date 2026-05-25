@@ -10,9 +10,19 @@ return new class extends Migration
     {
         Schema::create('criterios', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('asignacion_docente_id')->constrained('asignaciones_docente')->cascadeOnDelete();
+
+            $table->foreignId('asignacion_docente_id')
+                ->constrained('asignaciones_docente')
+                ->cascadeOnDelete();
+
             $table->string('nombre');
-            $table->integer('porcentaje');
+
+            $table->decimal('porcentaje', 5, 2);
+
+            $table->foreignId('tenant_id')
+                ->constrained('tenants')
+                ->cascadeOnDelete();
+                
             $table->timestamps();
         });
     }

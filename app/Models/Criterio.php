@@ -10,14 +10,25 @@ class Criterio extends Model
 {
     use HasFactory, BelongsToTenant;
 
+    protected $table = 'criterios';
+
     protected $fillable = [
         'asignacion_docente_id',
         'nombre',
         'porcentaje',
     ];
 
+    protected $casts = [
+        'porcentaje' => 'decimal:2',
+    ];
+
     public function notas()
     {
         return $this->hasMany(Nota::class);
+    }
+
+    public function asignacionDocente()
+    {
+        return $this->belongsTo(AsignacionDocente::class);
     }
 }
