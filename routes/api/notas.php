@@ -17,4 +17,9 @@ Route::middleware([
         '/criterios/{criterio}/notas',
         [NotaController::class, 'store']
     );
+
+    Route::get(
+        '/asignaciones/{asignacion}/libro-calificaciones',
+        [NotaController::class, 'libroCalificaciones']
+    );
 });

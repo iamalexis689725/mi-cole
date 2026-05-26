@@ -21,3 +21,4 @@ require __DIR__ . '/api/anecdotario.php';
 require __DIR__ . '/api/tenantModules.php';
 require __DIR__ . '/api/criterio.php';
 require __DIR__ . '/api/notas.php';
+require __DIR__ . '/api/libroCalificaciones.php';

@@ -93,6 +93,64 @@ class NotaController extends Controller
         ]);
     }
 
+    public function libroCalificaciones(
+        int $asignacionId
+    ): JsonResponse {
+
+        $asignacion = AsignacionDocente::findOrFail($asignacionId);
+
+        $this->authorizeProfesor($asignacion);
+
+        // 🔥 criterios
+        $criterios = Criterio::where(
+            'asignacion_docente_id',
+            $asignacionId
+        )
+            ->orderBy('id')
+            ->get();
+
+        // 🔥 estudiantes inscritos
+        $inscripciones = Inscripcion::with('estudiante.user')
+            ->where('curso_id', $asignacion->curso_id)
+            ->where('paralelo_id', $asignacion->paralelo_id)
+            ->where(
+                'academic_period_id',
+                $asignacion->academic_period_id
+            )
+            ->get();
+
+        $estudiantes = $inscripciones->map(function ($inscripcion) use ($criterios) {
+
+            $notas = [];
+
+            foreach ($criterios as $criterio) {
+
+                $nota = Nota::where(
+                    'criterio_id',
+                    $criterio->id
+                )
+                    ->where(
+                        'estudiante_id',
+                        $inscripcion->estudiante_id
+                    )
+                    ->first();
+
+                $notas[$criterio->id] = $nota?->nota;
+            }
+
+            return [
+                'id' => $inscripcion->estudiante->id,
+                'nombre' => $inscripcion->estudiante->user->name,
+                'notas' => $notas,
+            ];
+        });
+
+        return response()->json([
+            'criterios' => $criterios,
+            'estudiantes' => $estudiantes,
+        ]);
+    }
+
     private function authorizeProfesor(
         AsignacionDocente $asignacion
     ): void {
