@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AsignacionDocente;
 use App\Models\Criterio;
+use App\Models\PeriodoEvaluacion;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -16,7 +17,58 @@ class CriterioController extends Controller
 
         $this->authorizeProfesor($asignacion);
 
-        $criterios = Criterio::where('asignacion_docente_id', $asignacionId)
+        $criterios = Criterio::with('periodoEvaluacion')
+            ->where('asignacion_docente_id', $asignacionId)
+            ->orderBy('id')
+            ->get();
+
+        return response()->json($criterios);
+    }
+
+    public function criteriosPorPeriodo(
+        int $periodoId
+    ): JsonResponse {
+
+        $criterios = Criterio::with('periodoEvaluacion')
+            ->where('periodo_evaluacion_id', $periodoId)
+            ->orderBy('id')
+            ->get();
+
+        return response()->json($criterios);
+    }
+
+
+    public function misCriteriosPorPeriodo(
+        int $periodoId
+    ): JsonResponse {
+
+        $profesor = auth()->user()->profesor;
+
+        if (!$profesor) {
+            return response()->json([
+                'message' => 'Profesor no encontrado'
+            ], 403);
+        }
+
+        $criterios = Criterio::with([
+            'periodoEvaluacion',
+            'asignacionDocente.subject:id,name',
+            'asignacionDocente.curso:id,nombre',
+            'asignacionDocente.paralelo:id,nombre',
+        ])
+            ->where(
+                'periodo_evaluacion_id',
+                $periodoId
+            )
+            ->whereHas(
+                'asignacionDocente',
+                function ($query) use ($profesor) {
+                    $query->where(
+                        'profesor_id',
+                        $profesor->id
+                    );
+                }
+            )
             ->orderBy('id')
             ->get();
 
@@ -26,6 +78,7 @@ class CriterioController extends Controller
     public function store(Request $request, int $asignacionId): JsonResponse
     {
         $request->validate([
+            'periodo_evaluacion_id' => 'required|exists:periodos_evaluacion,id',
             'nombre' => 'required|string|max:255',
             'porcentaje' => 'required|numeric|min:1|max:100',
         ]);
@@ -34,17 +87,25 @@ class CriterioController extends Controller
 
         $this->authorizeProfesor($asignacion);
 
-        $total = Criterio::where('asignacion_docente_id', $asignacionId)
+        $total = Criterio::where(
+            'periodo_evaluacion_id',
+            $request->periodo_evaluacion_id
+        )
+            ->where(
+                'asignacion_docente_id',
+                $asignacionId
+            )
             ->sum('porcentaje');
 
         if (($total + $request->porcentaje) > 100) {
             return response()->json([
-                'message' => 'La suma de porcentajes no puede superar 100%'
+                'message' => 'La suma de porcentajes para esta materia en este periodo no puede superar 100%'
             ], 422);
         }
 
         $criterio = Criterio::create([
             'asignacion_docente_id' => $asignacionId,
+            'periodo_evaluacion_id' => $request->periodo_evaluacion_id,
             'nombre' => $request->nombre,
             'porcentaje' => $request->porcentaje,
             'tenant_id' => $asignacion->tenant_id,
@@ -67,15 +128,23 @@ class CriterioController extends Controller
         $this->authorizeProfesor($asignacion);
 
         $total = Criterio::where(
-            'asignacion_docente_id',
-            $criterio->asignacion_docente_id
+            'periodo_evaluacion_id',
+            $criterio->periodo_evaluacion_id
         )
-            ->where('id', '!=', $criterio->id)
+            ->where(
+                'asignacion_docente_id',
+                $criterio->asignacion_docente_id
+            )
+            ->where(
+                'id',
+                '!=',
+                $criterio->id
+            )
             ->sum('porcentaje');
 
         if (($total + $request->porcentaje) > 100) {
             return response()->json([
-                'message' => 'La suma de porcentajes no puede superar 100%'
+                'message' => 'La suma de porcentajes para esta materia en este periodo no puede superar 100%'
             ], 422);
         }
 
@@ -87,26 +156,38 @@ class CriterioController extends Controller
         return response()->json($criterio);
     }
 
-    public function destroy(int $criterioId): JsonResponse
-    {
-        $criterio = Criterio::findOrFail($criterioId);
+    public function destroy(
+        int $criterioId
+    ): JsonResponse {
+
+        $criterio = Criterio::findOrFail(
+            $criterioId
+        );
 
         $asignacion = $criterio->asignacionDocente;
 
-        $this->authorizeProfesor($asignacion);
+        $this->authorizeProfesor(
+            $asignacion
+        );
 
         $criterio->delete();
-        
+
         return response()->json([
-            'message' => 'Criterio eliminado correctamente'
+            'message' =>
+            'Criterio eliminado correctamente'
         ]);
     }
 
-    private function authorizeProfesor(AsignacionDocente $asignacion): void
-    {
+    private function authorizeProfesor(
+        AsignacionDocente $asignacion
+    ): void {
+
         $profesor = auth()->user()->profesor;
 
-        if (!$profesor || $profesor->id !== $asignacion->profesor_id) {
+        if (
+            !$profesor ||
+            $profesor->id !== $asignacion->profesor_id
+        ) {
             abort(403, 'No autorizado');
         }
     }

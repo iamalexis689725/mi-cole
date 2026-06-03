@@ -14,6 +14,7 @@ class Criterio extends Model
 
     protected $fillable = [
         'asignacion_docente_id',
+        'periodo_evaluacion_id',
         'nombre',
         'porcentaje',
     ];
@@ -30,5 +31,10 @@ class Criterio extends Model
     public function asignacionDocente()
     {
         return $this->belongsTo(AsignacionDocente::class);
+    }
+
+    public function periodoEvaluacion()
+    {
+        return $this->belongsTo(PeriodoEvaluacion::class);
     }
 }
