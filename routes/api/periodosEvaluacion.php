@@ -5,7 +5,7 @@ use App\Http\Controllers\Api\PeriodoEvaluacionController;
 
 Route::middleware([
     'auth:sanctum',
-    'role:director'
+    'role:director|profesor'
 ])->group(function () {
 
     Route::get(

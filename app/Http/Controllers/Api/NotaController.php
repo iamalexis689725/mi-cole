@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AsignacionDocente;
 use App\Models\Criterio;
 use App\Models\Inscripcion;
 use App\Models\Nota;
-use App\Models\AsignacionDocente;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -21,8 +21,6 @@ class NotaController extends Controller
 
         $asignacion = $criterio->asignacionDocente;
 
-        // 🔥 IMPORTANTE:
-        // cargar estudiante.user
         $inscripciones = Inscripcion::with('estudiante.user')
             ->where('curso_id', $asignacion->curso_id)
             ->where('paralelo_id', $asignacion->paralelo_id)
@@ -34,21 +32,21 @@ class NotaController extends Controller
 
         $resultado = $inscripciones->map(function ($inscripcion) use ($criterio) {
 
-            $nota = Nota::where('criterio_id', $criterio->id)
-                ->where('estudiante_id', $inscripcion->estudiante_id)
+            $nota = Nota::where(
+                'criterio_id',
+                $criterio->id
+            )
+                ->where(
+                    'estudiante_id',
+                    $inscripcion->estudiante_id
+                )
                 ->first();
 
             return [
-                'estudiante_id' => $inscripcion->estudiante->id,
-
-                // 🔥 EL NOMBRE VIENE DE USER
-                'estudiante' =>
-                $inscripcion->estudiante->user?->name,
-
+                'id' => $inscripcion->estudiante->id,
+                'nombre' => $inscripcion->estudiante->user?->name,
                 'nota_id' => $nota?->id,
-
                 'nota' => $nota?->nota,
-
                 'observacion' => $nota?->observacion,
             ];
         });
@@ -101,15 +99,18 @@ class NotaController extends Controller
 
         $this->authorizeProfesor($asignacion);
 
-        // 🔥 criterios
         $criterios = Criterio::where(
             'asignacion_docente_id',
             $asignacionId
         )
+            ->select(
+                'id',
+                'nombre',
+                'porcentaje'
+            )
             ->orderBy('id')
             ->get();
 
-        // 🔥 estudiantes inscritos
         $inscripciones = Inscripcion::with('estudiante.user')
             ->where('curso_id', $asignacion->curso_id)
             ->where('paralelo_id', $asignacion->paralelo_id)
@@ -119,31 +120,67 @@ class NotaController extends Controller
             )
             ->get();
 
-        $estudiantes = $inscripciones->map(function ($inscripcion) use ($criterios) {
+        $criterioIds = $criterios->pluck('id');
 
-            $notas = [];
+        $notas = Nota::whereIn(
+            'criterio_id',
+            $criterioIds
+        )->get();
 
-            foreach ($criterios as $criterio) {
+        $estudiantes = $inscripciones->map(
+            function ($inscripcion) use (
+                $criterios,
+                $notas
+            ) {
 
-                $nota = Nota::where(
-                    'criterio_id',
-                    $criterio->id
-                )
-                    ->where(
-                        'estudiante_id',
-                        $inscripcion->estudiante_id
-                    )
-                    ->first();
+                $promedio = 0;
 
-                $notas[$criterio->id] = $nota?->nota;
+                $notasEstudiante = $criterios->map(
+                    function ($criterio) use (
+                        $inscripcion,
+                        $notas,
+                        &$promedio
+                    ) {
+
+                        $nota = $notas
+                            ->where(
+                                'criterio_id',
+                                $criterio->id
+                            )
+                            ->where(
+                                'estudiante_id',
+                                $inscripcion->estudiante_id
+                            )
+                            ->first();
+
+                        $valorNota = (float) (
+                            $nota?->nota ?? 0
+                        );
+
+                        $promedio +=
+                            $valorNota *
+                            (
+                                $criterio->porcentaje / 100
+                            );
+
+                        return [
+                            'criterio_id' => $criterio->id,
+                            'nota' => $valorNota,
+                        ];
+                    }
+                );
+
+                return [
+                    'id' => $inscripcion->estudiante->id,
+                    'nombre' => $inscripcion->estudiante->user?->name,
+                    'notas' => $notasEstudiante,
+                    'promedio' => round(
+                        $promedio,
+                        2
+                    ),
+                ];
             }
-
-            return [
-                'id' => $inscripcion->estudiante->id,
-                'nombre' => $inscripcion->estudiante->user->name,
-                'notas' => $notas,
-            ];
-        });
+        );
 
         return response()->json([
             'criterios' => $criterios,

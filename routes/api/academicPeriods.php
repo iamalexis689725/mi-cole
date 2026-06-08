@@ -12,7 +12,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         ->middleware('role:director');
 
     Route::get('/periodos/activo', [AcademicPeriodController::class, 'activo'])
-        ->middleware('role:director');
+        ->middleware('role:director|profesor');
 
     Route::get('/periodos/{id}', [AcademicPeriodController::class, 'show'])
         ->middleware('role:director');
