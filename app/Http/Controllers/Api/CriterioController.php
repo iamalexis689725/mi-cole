@@ -25,6 +25,39 @@ class CriterioController extends Controller
         return response()->json($criterios);
     }
 
+    public function periodosAsignacion(
+        int $asignacionId
+    ): JsonResponse {
+
+        $asignacion = AsignacionDocente::findOrFail(
+            $asignacionId
+        );
+
+        $this->authorizeProfesor(
+            $asignacion
+        );
+
+        $periodos = PeriodoEvaluacion::whereHas(
+            'criterios',
+            function ($query) use ($asignacionId) {
+                $query->where(
+                    'asignacion_docente_id',
+                    $asignacionId
+                );
+            }
+        )
+            ->orderBy('orden')
+            ->get([
+                'id',
+                'nombre',
+                'orden'
+            ]);
+
+        return response()->json(
+            $periodos
+        );
+    }
+
     public function criteriosPorPeriodo(
         int $periodoId
     ): JsonResponse {

@@ -23,6 +23,11 @@ Route::middleware([
         [CriterioController::class, 'misCriteriosPorPeriodo']
     );
 
+    Route::get(
+        '/asignaciones/{asignacion}/periodos-evaluacion',
+        [CriterioController::class, 'periodosAsignacion']
+    );
+
     Route::post(
         '/criterios/asignacion/{asignacionId}',
         [CriterioController::class, 'store']

@@ -18,8 +18,13 @@ Route::middleware([
         [NotaController::class, 'store']
     );
 
-    Route::get(
+    /* Route::get(
         '/asignaciones/{asignacion}/libro-calificaciones',
+        [NotaController::class, 'libroCalificaciones']
+    ); */
+
+    Route::get(
+        '/asignaciones/{asignacion}/periodos-evaluacion/{periodo}/libro-calificaciones',
         [NotaController::class, 'libroCalificaciones']
     );
 });
