@@ -18,10 +18,15 @@ class AsignacionDocente extends Model
         'curso_id',
         'paralelo_id',
         'academic_period_id',
-        'dia',
-        'hora_inicio',
-        'hora_fin',
     ];
+
+    public function horarios()
+    {
+        return $this->hasMany(
+            HorarioAsignacion::class,
+            'asignacion_docente_id'
+        );
+    }
 
     public function profesor()
     {

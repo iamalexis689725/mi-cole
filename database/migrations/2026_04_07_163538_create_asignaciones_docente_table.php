@@ -17,20 +17,8 @@ return new class extends Migration
             $table->foreignId('profesor_id')->constrained('profesores')->cascadeOnDelete();
             $table->foreignId('curso_id')->constrained()->cascadeOnDelete();
             $table->foreignId('paralelo_id')->constrained()->cascadeOnDelete();
-
-            $table->string('dia');
-            $table->time('hora_inicio');
-            $table->time('hora_fin');
-
             $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
-
             $table->timestamps();
-
-            
-            $table->unique(
-                ['profesor_id', 'dia', 'hora_inicio', 'hora_fin', 'tenant_id'],
-                'uniq_prof_dia_hora_tenant'
-            );
         });
     }
 

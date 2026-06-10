@@ -7,24 +7,26 @@ use App\Models\AsignacionDocente;
 use App\Models\Paralelo;
 use App\Models\Profesor;
 use App\Models\Curso;
+use App\Models\HorarioAsignacion;
 use Illuminate\Http\Request;
 
 class AsignacionDocenteController extends Controller
 {
-    public function index($periodoId)
+    public function index(int $periodoId)
     {
         return AsignacionDocente::with([
             'profesor.user',
             'subject',
             'curso',
-            'paralelo'
+            'paralelo',
+            'horarios'
         ])
             ->where('academic_period_id', $periodoId)
             ->get();
     }
 
     //endpoint para solo profesor
-    public function misClases($periodoId)
+    public function misClases(int $periodoId)
     {
         $user = auth()->user();
 
@@ -61,19 +63,20 @@ class AsignacionDocenteController extends Controller
         ]);
     }
 
-    public function show($periodoId, $id)
+    public function show(int $periodoId, int $id)
     {
         return AsignacionDocente::with([
             'profesor.user',
             'subject',
             'curso',
-            'paralelo'
+            'paralelo',
+            'horarios'
         ])
             ->where('academic_period_id', $periodoId)
             ->findOrFail($id);
     }
 
-    public function destroy($periodoId, $id)
+    public function destroy(int $periodoId, int $id)
     {
         $asignacion = AsignacionDocente::where('academic_period_id', $periodoId)
             ->findOrFail($id);
@@ -85,18 +88,24 @@ class AsignacionDocenteController extends Controller
         ]);
     }
 
-    public function store(Request $request, $periodoId)
+    public function store(Request $request, int $periodoId)
     {
         $request->validate([
             'profesor_id' => 'required|exists:profesores,id',
             'subject_id' => 'required|exists:subjects,id',
             'curso_id' => 'required|exists:cursos,id',
             'paralelo_id' => 'required|exists:paralelos,id',
-            'dia' => 'required|string|in:Lunes,Martes,Miercoles,Jueves,Viernes,Sabado,Domingo',
-            'hora_inicio' => 'required',
-            'hora_fin' => 'required|after:hora_inicio',
-        ]);
 
+            'horarios' => 'required|array|min:1',
+
+            'horarios.*.dia' =>
+            'required|string|in:Lunes,Martes,Miercoles,Jueves,Viernes,Sabado,Domingo',
+
+            'horarios.*.hora_inicio' => 'required',
+
+            'horarios.*.hora_fin' =>
+            'required',
+        ]);
 
         $curso = Curso::where('id', $request->curso_id)
             ->where('academic_period_id', $periodoId)
@@ -107,7 +116,6 @@ class AsignacionDocenteController extends Controller
                 'message' => 'El curso no pertenece al periodo académico'
             ], 422);
         }
-
 
         $subjectValido = Profesor::where('id', $request->profesor_id)
             ->whereHas('subjects', function ($q) use ($request) {
@@ -131,35 +139,56 @@ class AsignacionDocenteController extends Controller
             ], 422);
         }
 
-        $conflictoCurso = AsignacionDocente::where('curso_id', $request->curso_id)
-            ->where('paralelo_id', $request->paralelo_id)
-            ->where('dia', $request->dia)
-            ->where('academic_period_id', $periodoId)
-            ->where(function ($q) use ($request) {
-                $q->where('hora_inicio', '<', $request->hora_fin)
-                    ->where('hora_fin', '>', $request->hora_inicio);
-            })
-            ->exists();
+        $asignacionExistente = AsignacionDocente::where([
+            'profesor_id' => $request->profesor_id,
+            'subject_id' => $request->subject_id,
+            'curso_id' => $request->curso_id,
+            'paralelo_id' => $request->paralelo_id,
+            'academic_period_id' => $periodoId,
+        ])->first();
 
-        if ($conflictoCurso) {
+        if ($asignacionExistente) {
             return response()->json([
-                'message' => 'El curso ya tiene una materia en ese horario'
+                'message' => 'La asignación ya existe'
             ], 422);
         }
 
-        $existe = AsignacionDocente::where('profesor_id', $request->profesor_id)
-            ->where('dia', $request->dia)
-            ->where('academic_period_id', $periodoId)
-            ->where(function ($q) use ($request) {
-                $q->where('hora_inicio', '<', $request->hora_fin)
-                    ->where('hora_fin', '>', $request->hora_inicio);
-            })
-            ->exists();
+        foreach ($request->horarios as $horario) {
 
-        if ($existe) {
-            return response()->json([
-                'message' => 'El profesor ya tiene una clase en ese horario'
-            ], 422);
+            $conflictoCurso = HorarioAsignacion::where('dia', $horario['dia'])
+                ->whereHas('asignacion', function ($q) use ($request, $periodoId) {
+                    $q->where('curso_id', $request->curso_id)
+                        ->where('paralelo_id', $request->paralelo_id)
+                        ->where('academic_period_id', $periodoId);
+                })
+                ->where(function ($q) use ($horario) {
+                    $q->where('hora_inicio', '<', $horario['hora_fin'])
+                        ->where('hora_fin', '>', $horario['hora_inicio']);
+                })
+                ->exists();
+
+            if ($conflictoCurso) {
+                return response()->json([
+                    'message' => 'El curso ya tiene una materia en ese horario'
+                ], 422);
+            }
+
+            $conflictoProfesor = HorarioAsignacion::where('dia', $horario['dia'])
+                ->whereHas('asignacion', function ($q) use ($request, $periodoId) {
+                    $q->where('profesor_id', $request->profesor_id)
+                        ->where('academic_period_id', $periodoId);
+                })
+                ->where(function ($q) use ($horario) {
+                    $q->where('hora_inicio', '<', $horario['hora_fin'])
+                        ->where('hora_fin', '>', $horario['hora_inicio']);
+                })
+                ->exists();
+
+            if ($conflictoProfesor) {
+                return response()->json([
+                    'message' => 'El profesor ya tiene una clase en ese horario'
+                ], 422);
+            }
         }
 
         $asignacion = AsignacionDocente::create([
@@ -168,10 +197,17 @@ class AsignacionDocenteController extends Controller
             'curso_id' => $request->curso_id,
             'paralelo_id' => $request->paralelo_id,
             'academic_period_id' => $periodoId,
-            'dia' => $request->dia,
-            'hora_inicio' => $request->hora_inicio,
-            'hora_fin' => $request->hora_fin,
         ]);
+
+        foreach ($request->horarios as $horario) {
+
+            HorarioAsignacion::create([
+                'asignacion_docente_id' => $asignacion->id,
+                'dia' => $horario['dia'],
+                'hora_inicio' => $horario['hora_inicio'],
+                'hora_fin' => $horario['hora_fin'],
+            ]);
+        }
 
         return response()->json([
             'message' => 'Asignación creada correctamente',
@@ -179,37 +215,56 @@ class AsignacionDocenteController extends Controller
                 'profesor.user',
                 'subject',
                 'curso',
-                'paralelo'
+                'paralelo',
+                'horarios'
             ])
         ], 201);
     }
 
-    public function horarioCurso($periodoId, $cursoId, $paraleloId)
-    {
-        $asignaciones = AsignacionDocente::with([
-            'profesor.user',
-            'subject'
+    public function horarioCurso(
+        int $periodoId,
+        int $cursoId,
+        int $paraleloId
+    ) {
+        $horarios = HorarioAsignacion::with([
+            'asignacion.profesor.user',
+            'asignacion.subject'
         ])
-            ->where('academic_period_id', $periodoId)
-            ->where('curso_id', $cursoId)
-            ->where('paralelo_id', $paraleloId)
+            ->whereHas('asignacion', function ($q) use (
+                $periodoId,
+                $cursoId,
+                $paraleloId
+            ) {
+                $q->where('academic_period_id', $periodoId)
+                    ->where('curso_id', $cursoId)
+                    ->where('paralelo_id', $paraleloId);
+            })
             ->orderBy('hora_inicio')
             ->get()
-            ->map(fn($a) => [
-                'id'          => $a->id,
-                'dia'         => $a->dia,
-                'hora_inicio' => $a->hora_inicio,
-                'hora_fin'    => $a->hora_fin,
-                'materia'     => $a->subject->name,
-                'profesor'    => $a->profesor->user->name,
+            ->map(fn($h) => [
+                'id' => $h->id,
+                'dia' => $h->dia,
+                'hora_inicio' => $h->hora_inicio,
+                'hora_fin' => $h->hora_fin,
+                'materia' => $h->asignacion->subject->name,
+                'profesor' => $h->asignacion->profesor->user->name,
             ])
             ->groupBy('dia');
 
-        $orden = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+        $orden = [
+            'Lunes',
+            'Martes',
+            'Miercoles',
+            'Jueves',
+            'Viernes',
+            'Sabado'
+        ];
 
         $horario = collect($orden)
-            ->filter(fn($dia) => $asignaciones->has($dia))
-            ->mapWithKeys(fn($dia) => [$dia => $asignaciones[$dia]]);
+            ->filter(fn($dia) => $horarios->has($dia))
+            ->mapWithKeys(fn($dia) => [
+                $dia => $horarios[$dia]
+            ]);
 
         return response()->json([
             'curso_id' => $cursoId,
