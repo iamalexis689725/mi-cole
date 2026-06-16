@@ -6,30 +6,15 @@ use App\Http\Controllers\Api\EstudianteController;
 
 Route::middleware(['auth:sanctum', 'role:director'])->group(function () {
 
-    Route::get(
-        '/estudiantes',
-        [EstudianteController::class, 'index']
-    );
+    Route::get('/estudiantes', [EstudianteController::class, 'index']);
 
-    Route::post(
-        '/estudiantes',
-        [EstudianteController::class, 'store']
-    );
+    Route::post('/estudiantes', [EstudianteController::class, 'store']);
 
-    Route::get(
-        '/estudiantes/{id}',
-        [EstudianteController::class, 'show']
-    );
+    Route::get('/estudiantes/{id}', [EstudianteController::class, 'show']);
 
-    Route::put(
-        '/estudiantes/{id}',
-        [EstudianteController::class, 'update']
-    );
+    Route::put('/estudiantes/{id}', [EstudianteController::class, 'update']);
 
-    Route::delete(
-        '/estudiantes/{id}',
-        [EstudianteController::class, 'destroy']
-    );
+    Route::delete('/estudiantes/{id}', [EstudianteController::class, 'destroy']);
 });
 
 Route::middleware(['auth:sanctum', 'role:estudiante', 'module:estudiantes'])->group(function () {

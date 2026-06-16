@@ -17,7 +17,7 @@ class EstudianteController extends Controller
             ->get();
     }
 
-    public function show($id)
+    public function show(int $id)
     {
         return Estudiante::with('user')->findOrFail($id);
     }
@@ -52,7 +52,7 @@ class EstudianteController extends Controller
         ], 201);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, int $id)
     {
         $estudiante = Estudiante::with('user')->findOrFail($id);
 
@@ -85,7 +85,7 @@ class EstudianteController extends Controller
         ]);
     }
 
-    public function destroy($id)
+    public function destroy(int $id)
     {
         $estudiante = Estudiante::with('user')->findOrFail($id);
 

@@ -18,7 +18,7 @@ class PadreFamiliaController extends Controller
         return PadreFamilia::with(['user', 'estudiantes.user'])->get();
     }
 
-    public function show($id)
+    public function show(int $id)
     {
         return PadreFamilia::with(['user', 'estudiantes.user'])->findOrFail($id);
     }
@@ -55,7 +55,7 @@ class PadreFamiliaController extends Controller
         ], 201);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, int $id)
     {
         $padre = PadreFamilia::with('user')->findOrFail($id);
 
@@ -89,7 +89,7 @@ class PadreFamiliaController extends Controller
         ]);
     }
 
-    public function destroy($id)
+    public function destroy(int $id)
     {
         $padre = PadreFamilia::with('user')->findOrFail($id);
 
@@ -151,7 +151,7 @@ class PadreFamiliaController extends Controller
         ], 201);
     }
 
-    public function estudiantes($id)
+    public function estudiantes(int $id)
     {
         $padre = PadreFamilia::with(['user', 'estudiantes.user'])->findOrFail($id);
 
