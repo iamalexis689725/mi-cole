@@ -198,7 +198,7 @@ class ProfesorController extends Controller
     }
 
 
-    public function subjects($id)
+    public function subjects(int $id)
     {
         $profesor = Profesor::with('subjects')->findOrFail($id);
 

@@ -11,4 +11,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/subjects', [SubjectController::class, 'store'])
         ->middleware('role:director');
 
+    Route::get(
+        '/subjects/{id}/profesores',
+        [SubjectController::class, 'profesores']
+    )->middleware('role:director');
 });

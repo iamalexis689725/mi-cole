@@ -12,17 +12,59 @@ use Illuminate\Http\Request;
 
 class AsignacionDocenteController extends Controller
 {
-    public function index(int $periodoId)
+    public function index(Request $request, int $periodoId)
     {
-        return AsignacionDocente::with([
+        $query = AsignacionDocente::with([
             'profesor.user',
             'subject',
             'curso',
             'paralelo',
             'horarios'
         ])
+            ->where('academic_period_id', $periodoId);
+
+        if ($request->filled('subject_id')) {
+            $query->where('subject_id', $request->subject_id);
+        }
+
+        if ($request->filled('profesor_id')) {
+            $query->where('profesor_id', $request->profesor_id);
+        }
+
+        return $query->get();
+    }
+
+
+    public function materias(int $periodoId)
+    {
+        return AsignacionDocente::with('subject')
             ->where('academic_period_id', $periodoId)
-            ->get();
+            ->get()
+            ->pluck('subject')
+            ->unique('id')
+            ->values();
+    }
+
+
+    public function profesores(
+        Request $request,
+        int $periodoId
+    ) {
+        $query = AsignacionDocente::with('profesor.user')
+            ->where('academic_period_id', $periodoId);
+
+        if ($request->filled('subject_id')) {
+            $query->where('subject_id', $request->subject_id);
+        }
+
+        return $query->get()
+            ->pluck('profesor')
+            ->unique('id')
+            ->values()
+            ->map(fn($p) => [
+                'id' => $p->id,
+                'nombre' => $p->user->name,
+            ]);
     }
 
     //endpoint para solo profesor
@@ -219,6 +261,114 @@ class AsignacionDocenteController extends Controller
                 'horarios'
             ])
         ], 201);
+    }
+
+    public function agregarHorario(
+        Request $request,
+        int $asignacionId
+    ) {
+        $request->validate([
+            'dia' => 'required|string|in:Lunes,Martes,Miercoles,Jueves,Viernes,Sabado,Domingo',
+            'hora_inicio' => 'required',
+            'hora_fin' => 'required|after:hora_inicio',
+        ]);
+
+        $asignacion = AsignacionDocente::with([
+            'profesor'
+        ])->findOrFail($asignacionId);
+
+        $conflictoCurso = HorarioAsignacion::where(
+            'dia',
+            $request->dia
+        )
+            ->whereHas('asignacion', function ($q) use ($asignacion) {
+                $q->where('curso_id', $asignacion->curso_id)
+                    ->where('paralelo_id', $asignacion->paralelo_id)
+                    ->where(
+                        'academic_period_id',
+                        $asignacion->academic_period_id
+                    );
+            })
+            ->where(function ($q) use ($request) {
+                $q->where(
+                    'hora_inicio',
+                    '<',
+                    $request->hora_fin
+                )
+                    ->where(
+                        'hora_fin',
+                        '>',
+                        $request->hora_inicio
+                    );
+            })
+            ->exists();
+
+        if ($conflictoCurso) {
+            return response()->json([
+                'message' => 'El curso ya tiene una materia en ese horario'
+            ], 422);
+        }
+
+        $conflictoProfesor = HorarioAsignacion::where(
+            'dia',
+            $request->dia
+        )
+            ->whereHas('asignacion', function ($q) use ($asignacion) {
+                $q->where(
+                    'profesor_id',
+                    $asignacion->profesor_id
+                )
+                    ->where(
+                        'academic_period_id',
+                        $asignacion->academic_period_id
+                    );
+            })
+            ->where(function ($q) use ($request) {
+                $q->where(
+                    'hora_inicio',
+                    '<',
+                    $request->hora_fin
+                )
+                    ->where(
+                        'hora_fin',
+                        '>',
+                        $request->hora_inicio
+                    );
+            })
+            ->exists();
+
+        if ($conflictoProfesor) {
+            return response()->json([
+                'message' => 'El profesor ya tiene una clase en ese horario'
+            ], 422);
+        }
+
+        $horarioDuplicado = HorarioAsignacion::where(
+            'asignacion_docente_id',
+            $asignacionId
+        )
+            ->where('dia', $request->dia)
+            ->where('hora_inicio', $request->hora_inicio)
+            ->where('hora_fin', $request->hora_fin)
+            ->exists();
+
+        if ($horarioDuplicado) {
+            return response()->json([
+                'message' => 'Ese horario ya existe en la asignación'
+            ], 422);
+        }
+
+        $horario = HorarioAsignacion::create([
+            'asignacion_docente_id' => $asignacionId,
+            'dia' => $request->dia,
+            'hora_inicio' => $request->hora_inicio,
+            'hora_fin' => $request->hora_fin,
+        ]);
+
+        return response()->json([
+            'message' => 'Horario agregado correctamente',
+            'data' => $horario
+        ]);
     }
 
     public function horarioCurso(
