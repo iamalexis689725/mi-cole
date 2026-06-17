@@ -18,6 +18,29 @@ class PadreFamiliaController extends Controller
         return PadreFamilia::with(['user', 'estudiantes.user'])->get();
     }
 
+
+    public function misHijos()
+    {
+        $user = auth()->user();
+
+        $padre = PadreFamilia::where('user_id', $user->id)
+            ->with(['estudiantes.user'])
+            ->firstOrFail();
+
+        return response()->json([
+            'padre' => [
+                'id'     => $padre->id,
+                'nombre' => $padre->user->name,
+            ],
+            'estudiantes' => $padre->estudiantes->map(fn($e) => [
+                'id'                => $e->id,
+                'nombre'            => $e->user->name,
+                'codigo_estudiante' => $e->codigo_estudiante,
+                'parentesco'        => $e->pivot->parentesco,
+            ])
+        ]);
+    }
+
     public function show(int $id)
     {
         return PadreFamilia::with(['user', 'estudiantes.user'])->findOrFail($id);

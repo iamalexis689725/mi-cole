@@ -27,8 +27,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/padre-familias/{id}/estudiantes', [PadreFamiliaController::class, 'estudiantes'])
         ->middleware('role:director');
 
+    Route::get('/padre/mis-hijos', [PadreFamiliaController::class, 'misHijos'])
+        ->middleware('role:padre');
+
     Route::get(
         '/padre/mis-hijos/agendas',
         [PadreAgendaController::class, 'tareasPendientes']
+    )->middleware('role:padre');
+
+    Route::get(
+        '/padre/mis-hijos/{estudianteId}/agendas',
+        [PadreAgendaController::class, 'agendasPorHijo']
     )->middleware('role:padre');
 });
