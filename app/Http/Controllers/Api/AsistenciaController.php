@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 
 class AsistenciaController extends Controller
 {
-    public function store(Request $request, $periodoId, $asignacionId)
+    public function store(Request $request, int $periodoId, int $asignacionId)
     {
         $request->validate([
             'fecha' => 'required|date',
@@ -54,7 +54,7 @@ class AsistenciaController extends Controller
         ], 201);
     }
 
-    public function show($periodoId, $asignacionId, $fecha)
+    public function show(int $periodoId, int $asignacionId, string $fecha)
     {
         $asignacion = AsignacionDocente::where('id', $asignacionId)
             ->where('academic_period_id', $periodoId)
@@ -75,7 +75,7 @@ class AsistenciaController extends Controller
     }
 
 
-    public function update(Request $request, $id)
+    public function update(Request $request, int $id)
     {
         $request->validate([
             'asistencias' => 'required|array',
@@ -105,7 +105,7 @@ class AsistenciaController extends Controller
         ]);
     }
 
-    public function index($periodoId, $asignacionId)
+    public function index(int $periodoId, int $asignacionId)
     {
         $asignacion = AsignacionDocente::where('id', $asignacionId)
             ->where('academic_period_id', $periodoId)
