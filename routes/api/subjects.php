@@ -11,6 +11,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/subjects', [SubjectController::class, 'store'])
         ->middleware('role:director');
 
+    Route::put('/subjects/{subject}', [SubjectController::class, 'update'])
+        ->middleware('role:director');
+
+    Route::delete('/subjects/{subject}', [SubjectController::class, 'destroy'])
+        ->middleware('role:director');
+
     Route::get(
         '/subjects/{id}/profesores',
         [SubjectController::class, 'profesores']

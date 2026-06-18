@@ -27,6 +27,28 @@ class SubjectController extends Controller
         return response()->json($subject);
     }
 
+    public function update(Request $request, Subject $subject)
+    {
+        $request->validate([
+            'name' => 'required'
+        ]);
+
+        $subject->update([
+            'name' => $request->name
+        ]);
+
+        return response()->json($subject);
+    }
+
+    public function destroy(Subject $subject)
+    {
+        $subject->delete();
+
+        return response()->json([
+            'message' => 'Materia eliminada'
+        ]);
+    }
+
     public function profesores(int $id)
     {
         $profesores = Profesor::with('user')
