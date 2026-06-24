@@ -28,4 +28,9 @@ Route::middleware(['auth:sanctum', 'role:estudiante', 'module:estudiantes'])->gr
         '/estudiante/biblioteca',
         [EstudianteAgendaController::class, 'biblioteca']
     );
+
+    Route::get(
+        '/estudiante/materias',
+        [EstudianteAgendaController::class, 'materias']
+    );
 });
