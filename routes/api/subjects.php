@@ -8,6 +8,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/subjects', [SubjectController::class, 'index'])
         ->middleware('role:director|profesor');
 
+    Route::get('/subjects/{subject}', [SubjectController::class, 'show'])
+        ->middleware('role:director|profesor');
+
     Route::post('/subjects', [SubjectController::class, 'store'])
         ->middleware('role:director');
 

@@ -14,6 +14,11 @@ class SubjectController extends Controller
         return Subject::all();
     }
 
+    public function show(Subject $subject)
+    {
+        return response()->json($subject);
+    }
+
     public function store(Request $request)
     {
         $request->validate([
