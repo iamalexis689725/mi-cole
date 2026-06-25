@@ -38,4 +38,9 @@ Route::middleware(['auth:sanctum', 'role:estudiante', 'module:estudiantes'])->gr
         '/estudiante/materias/{asignacionId}',
         [EstudianteAgendaController::class, 'detalleMateria']
     );
+
+    Route::get(
+        '/estudiante/horario',
+        [EstudianteController::class, 'horario']
+    );
 });

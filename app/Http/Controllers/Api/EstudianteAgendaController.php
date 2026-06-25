@@ -192,7 +192,7 @@ class EstudianteAgendaController extends Controller
             ])
         );
     }
-
+    
     public function detalleMateria(int $asignacionId)
     {
         $user = auth()->user();

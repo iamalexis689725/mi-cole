@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AsignacionDocente;
 use App\Models\Estudiante;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -98,4 +99,58 @@ class EstudianteController extends Controller
             'message' => 'Estudiante eliminado correctamente'
         ]);
     }
+
+    public function horario()
+{
+    $user = auth()->user();
+
+    $estudiante = Estudiante::where(
+        'user_id',
+        $user->id
+    )->firstOrFail();
+
+    $asignaciones = AsignacionDocente::with([
+        'subject',
+        'profesor.user',
+        'horarios'
+    ])
+    ->whereHas(
+        'curso.inscripciones',
+        fn($q) =>
+        $q->where(
+            'estudiante_id',
+            $estudiante->id
+        )
+    )
+    ->get();
+
+    $horarios = [];
+
+    foreach ($asignaciones as $asignacion) {
+
+        foreach ($asignacion->horarios as $horario) {
+
+            $horarios[] = [
+
+                'asignacion_id' => $asignacion->id,
+
+                'dia' => strtolower($horario->dia),
+
+                'hora_inicio' =>
+                    substr($horario->hora_inicio, 0, 5),
+
+                'hora_fin' =>
+                    substr($horario->hora_fin, 0, 5),
+
+                'materia' =>
+                    $asignacion->subject->name,
+
+                'profesor' =>
+                    $asignacion->profesor->user->name,
+            ];
+        }
+    }
+
+    return response()->json($horarios);
+}
 }
